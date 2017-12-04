@@ -290,3 +290,19 @@ const iterator = astar('aaa')
 console.log(iterator.next()) // {value: ['a', 'a', 'a'], done: false}
 console.log(iterator.next()) // {done: true}
 ```
+
+## Background
+
+This is based on rudimentary work I did for [Loco](https://github.com/qntm/loco) (PHP) and on some parsing code I wrote for [greenery](https://github.com/qntm/greenery) (Python) so that it could parse regular expressions. The two main improvements are:
+
+1. Using iterators to yield multiple results rather than only a single result, enabling the use of ambiguous grammars.
+2. Using a [variadic fixed point combinator](https://qntm.org/variadic) to resolve multiple mutually recursive matchers.
+
+Potential future work:
+
+* More built-in matchers for useful things
+* Should probably add the methods `map` and `filter` to `Parser` as well
+* Maybe port those Loco examples over - they work out MUCH simpler now
+* Figure out if there's maybe a way to resolve the left-recursion issue at `resolve` time (Loco managed it!)
+* Figure out if there's a way to detect null-stars at `resolve` time (Loco managed it!)
+* Although they could potentially reduce the total amount of code here, I'm reluctant to just start using full-blown [`Generator`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator)s and the [iterable protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#iterable) since on platforms where these aren't supported, compilers like Babel typically have to introduce a vast bunch of gubbins to make them work. But maybe it's possible to at least supply `Symbol.iterator`, so that these matchers can be used in `for(let i of iterator)` and `[...iterator]` and so on?
