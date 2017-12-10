@@ -14,8 +14,10 @@ const {
   star,
   unicode,
   wseq,
-  wplus
-} = require('../src/matcher.js')
+  wplus,
+  maybe,
+  MonoParser
+} = require('../src/main.js')
 
 const getAllValuesFrom = iterator => {
   const values = []
@@ -557,6 +559,26 @@ describe('Matcher', () => {
       expect(iterator2.next()).toEqual({done: true})
     })
   })
+
+  describe('maybe', () => {
+    it('works', () => {
+      const matcher = fixed('a').maybe()
+      const iterator = matcher('a', 0)
+      expect(iterator.next()).toEqual({value: {j: 1, match: 'a'}, done: false})
+      expect(iterator.next()).toEqual({value: {j: 0, match: ''}, done: false})
+      expect(iterator.next()).toEqual({done: true})
+    })
+  })
+})
+
+describe('maybe', () => {
+  it('works', () => {
+    const matcher = maybe(fixed('a'))
+    const iterator = matcher('a', 0)
+    expect(iterator.next()).toEqual({value: {j: 1, match: 'a'}, done: false})
+    expect(iterator.next()).toEqual({value: {j: 0, match: ''}, done: false})
+    expect(iterator.next()).toEqual({done: true})
+  })
 })
 
 describe('Parser', () => {
@@ -566,5 +588,33 @@ describe('Parser', () => {
     expect(iterator.next()).toEqual({value: ['a', 'a', 'a'], done: false})
     expect(iterator.next()).toEqual({done: true})
     expect(iterator.next()).toEqual({done: true})
+  })
+})
+
+describe('MonoParser', () => {
+  it('works', () => {
+    const astar = MonoParser(fixed('a').star())
+    expect(astar('aaa')).toEqual(['a', 'a', 'a'])
+    expect(astar('a')).toEqual(['a'])
+    expect(astar('')).toEqual([])
+    expect(() => astar('aaab')).toThrowError('Expected 1 result, got 0')
+    expect(() => astar('b')).toThrowError('Expected 1 result, got 0')
+  })
+
+  it('dislikes ambiguity', () => {
+    const ambiguous1 = Parser(or([
+      seq([fixed('a'), fixed('aa')]),
+      seq([fixed('aa'), fixed('a')])
+    ]))
+    const iterator = ambiguous1('aaa')
+    expect(iterator.next()).toEqual({value: ['a', 'aa'], done: false})
+    expect(iterator.next()).toEqual({value: ['aa', 'a'], done: false})
+    expect(iterator.next()).toEqual({done: true})
+
+    const ambiguous2 = MonoParser(or([
+      seq([fixed('a'), fixed('aa')]),
+      seq([fixed('aa'), fixed('a')])
+    ]))
+    expect(() => ambiguous2('aaa')).toThrowError('Expected 1 result, got 2')
   })
 })

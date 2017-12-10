@@ -72,7 +72,8 @@ const Matcher = inner => Object.assign(
     plus: () => plus(inner),
     or: other => or([inner, other]),
     seq: other => seq([inner, other]),
-    wplus: ws => wplus(inner, ws)
+    wplus: ws => wplus(inner, ws),
+    maybe: () => maybe(inner)
   }
 )
 
@@ -385,6 +386,8 @@ const wplus = (inner, separator) => seq([
   seq([separator, inner]).map(([separator, inner]) => inner).star()
 ]).map(([first, rest]) => [first].concat(rest))
 
+const maybe = inner => or([inner, fixed('')])
+
 /**
   Replace the inner matcher with a parser, which will
   parse the entire supplied string as an instance of the given class. Strip
@@ -394,26 +397,69 @@ const wplus = (inner, separator) => seq([
   `inner` doesn't have to be a full-blown `Matcher` object, as long as it
   returns generators which generate values of the form `{j, match}`.
 */
-const Parser = inner => string => {
-  const iterator = inner(string, 0)
-  let done = false
-  return {
-    next: () => {
-      while (!done) {
-        const result = iterator.next()
-        if (result.done) {
-          done = true
-        } else if (result.value.j === string.length) {
-          return {
-            value: result.value.match,
-            done: false
-          }
-        } // otherwise ignore the partial parse tree
-      }
+const Parser = inner =>
+  string => {
+    const iterator = inner(string, 0)
+    let done = false
+    return {
+      next: () => {
+        while (!done) {
+          const result = iterator.next()
+          if (result.done) {
+            done = true
+          } else if (result.value.j === string.length) {
+            return {
+              value: result.value.match,
+              done: false
+            }
+          } // otherwise ignore the partial parse tree
+        }
 
-      return {done}
+        return {done}
+      }
     }
+  }
+
+/**
+  Wraps up the supplied matcher in an object which parses the entire string
+  and ensures that there is only one possible way to parse the string. If
+  there is exactly one parse tree it returns it alone, otherwise it throws
+  some kind of exception.
+*/
+const MonoParser = inner => {
+  const parser = Parser(inner)
+  return string => {
+    const results = []
+    const iterator = parser(string)
+    while (true) {
+      const result = iterator.next()
+      if (result.done) {
+        break
+      }
+      results.push(result.value)
+    }
+
+    if (results.length !== 1) {
+      throw Error('Expected 1 result, got ' + results.length)
+    }
+
+    return results[0]
   }
 }
 
-module.exports = {Matcher, chr, unicode, fixed, or, seq, star, resolve, plus, wseq, wplus, Parser}
+module.exports = {
+  Matcher,
+  chr,
+  unicode,
+  fixed,
+  or,
+  seq,
+  star,
+  resolve,
+  plus,
+  wseq,
+  wplus,
+  maybe,
+  Parser,
+  MonoParser
+}

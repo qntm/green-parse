@@ -2,7 +2,7 @@
 
 'use strict'
 
-const {fixed, or, seq, wplus, resolve, star, Parser} = require('../src/matcher.js')
+const {fixed, or, seq, wplus, resolve, star, Parser} = require('../src/main.js')
 
 describe('grammar school', () => {
   it('fixed', () => {

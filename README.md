@@ -219,6 +219,10 @@ console.log(iterator.next()) // {value: {match: ['x', 'x', 'x'], j: 5}, done: fa
 console.log(iterator.next()) // {done: true}
 ```
 
+### maybe(matcher)
+
+Matches `matcher` or, failing that, the empty string.
+
 ### Matcher(matcher)
 
 Wraps up a small-M matcher object into a big-M `Matcher` object with the same behaviour but a variety of useful methods. Note that all of the methods supplied above return `Matcher` objects which means they all have these methods on them.
@@ -279,6 +283,12 @@ const abc = fixed('a').seq(fixed('b')).seq(fixed('c'))
 const aaa = fixed('a').wplus(fixed('-'))
 ```
 
+#### maybe()
+
+```js
+const amaybe = fixed('a').maybe()
+```
+
 ### Parser(matcher)
 
 Wraps up a small-M matcher object into a `Parser` object. Whereas a matcher accepts two arguments, a string and an index in the string, a parser accepts only a string; the index is implicitly `0`. Similarly, where the values returned by a matcher are of the form `{match, j}`, the parser returns just matches by themselves; `j` is implicitly the length of the string. In other words, complete parse trees only.
@@ -290,6 +300,10 @@ const iterator = astar('aaa')
 console.log(iterator.next()) // {value: ['a', 'a', 'a'], done: false}
 console.log(iterator.next()) // {done: true}
 ```
+
+### MonoParser(matcher)
+
+Wraps up a small-M matcher object into a `MonoParser` object. Whereas a `Parser` returns an iterator for possible parse trees, a `MonoParser` returns a solitary parse tree - and throws an exception if there are no parse trees, or if there is more than one parse tree (i.e. there is ambiguity in the input).
 
 ## Background
 
