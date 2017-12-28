@@ -4,6 +4,28 @@
 
 'use strict'
 
+const mapIterator = (iterator, f) => ({
+  next: () => {
+    const result = iterator.next()
+    return 'value' in result ? {
+      value: f(result.value),
+      done: result.done
+    } : result
+  }
+})
+
+const filterIterator = (iterator, f) => ({
+  next: () => {
+    while (true) {
+      const result = iterator.next()
+      if (!('value' in result) || f(result.value)) {
+        return result
+      }
+      // Do nothing, keep iterating
+    }
+  }
+})
+
 // It is assumed that `i` is between 0 and `string.length` inclusive.
 
 /**
@@ -20,53 +42,14 @@ const Matcher = inner => Object.assign(
   // function.
   {
     // Transform all of the matches
-    map: f => Matcher((string, i) => {
-      const iterator = inner(string, i)
-      let done = false
-      return {
-        next: () => {
-          while (!done) {
-            const result = iterator.next()
-            if (result.done) {
-              done = true
-            } else {
-              return {
-                value: {
-                  j: result.value.j,
-                  match: f(result.value.match)
-                },
-                done: false
-              }
-            }
-          }
-
-          return {done}
-        }
-      }
-    }),
+    map: f => Matcher((string, i) =>
+      mapIterator(inner(string, i), ({match, j}) => ({match: f(match), j}))
+    ),
 
     // Only return those matches which pass the filter
-    filter: f => Matcher((string, i) => {
-      const iterator = inner(string, i)
-      let done = false
-      return {
-        next: () => {
-          while (!done) {
-            const result = iterator.next()
-            if (result.done) {
-              done = true
-            } else if (f(result.value.match)) {
-              return {
-                value: result.value,
-                done: false
-              }
-            } // Otherwise ignore the result and keep iterating
-          }
-
-          return {done}
-        }
-      }
-    }),
+    filter: f => Matcher((string, i) =>
+      filterIterator(inner(string, i), ({match}) => f(match))
+    ),
 
     star: () => star(inner),
     plus: () => plus(inner),
@@ -398,27 +381,13 @@ const maybe = inner => or([inner, fixed('')])
   returns generators which generate values of the form `{j, match}`.
 */
 const Parser = inner =>
-  string => {
-    const iterator = inner(string, 0)
-    let done = false
-    return {
-      next: () => {
-        while (!done) {
-          const result = iterator.next()
-          if (result.done) {
-            done = true
-          } else if (result.value.j === string.length) {
-            return {
-              value: result.value.match,
-              done: false
-            }
-          } // otherwise ignore the partial parse tree
-        }
-
-        return {done}
-      }
-    }
-  }
+  string => mapIterator(
+    filterIterator(
+      inner(string, 0),
+      value => value.j === string.length
+    ),
+    value => value.match
+  )
 
 /**
   Wraps up the supplied matcher in an object which parses the entire string
@@ -433,10 +402,12 @@ const MonoParser = inner => {
     const iterator = parser(string)
     while (true) {
       const result = iterator.next()
+      if ('value' in result) {
+        results.push(result.value)
+      }
       if (result.done) {
         break
       }
-      results.push(result.value)
     }
 
     if (results.length !== 1) {
