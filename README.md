@@ -232,7 +232,7 @@ Wraps up a small-M matcher object into a big-M `Matcher` object with the same be
 Use this to transform matches. `f` should be a function which accepts a match as input and returns the transformed match.
 
 ```js
-const bracketed = seq(fixed('('), star(fixed('x')), fixed(')'))
+const bracketed = seq([fixed('('), star(fixed('x')), fixed(')')])
   .map(([open, xs, close]) => xs.length)
 
 const iterator = bracketed('(xxxx)', 0)
