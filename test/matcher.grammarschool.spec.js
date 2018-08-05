@@ -295,4 +295,40 @@ describe('grammar school', () => {
       match: ['0', [['3', '3']], '1']
     })
   })
+
+  it('simpler syntax', () => {
+    const grammar = resolve({
+      a: matchers => or([
+        seq(['0', matchers.b, '1'])
+      ]),
+      b: matchers => or([
+        seq(['2']),
+        seq([star('3')])
+      ])
+    })
+
+    const iterator1 = grammar.a('01', 0)
+    expect(iterator1.next().value).toEqual({
+      j: 2,
+      match: ['0', [[]], '1']
+    })
+
+    const iterator2 = grammar.a('021', 0)
+    expect(iterator2.next().value).toEqual({
+      j: 3,
+      match: ['0', ['2'], '1']
+    })
+
+    const iterator3 = grammar.a('031', 0)
+    expect(iterator3.next().value).toEqual({
+      j: 3,
+      match: ['0', [['3']], '1']
+    })
+
+    const iterator4 = grammar.a('0331', 0)
+    expect(iterator4.next().value).toEqual({
+      j: 4,
+      match: ['0', [['3', '3']], '1']
+    })
+  })
 })

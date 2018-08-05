@@ -143,6 +143,12 @@ console.log(iterator2.next()) // {value: {match: 'b', j: 1}, done: false}
 console.log(iterator2.next()) // {done: true}
 ```
 
+You can use plain strings instead of `fixed` matchers here:
+
+```js
+const aorb = or(['a', 'b'])
+```
+
 ### seq(matchers)
 
 Takes an array `matchers` and returns a new matcher which applies all of the inner matches in sequence. Each match returned by `seq` is an array of the matches from each inner matcher. Proceeds depth-first.
@@ -153,6 +159,12 @@ const abc = seq([fixed('a'), fixed('b'), fixed('c')])
 const iterator = abc('abc', 0)
 console.log(iterator.next()) // {value: {match: ['a', 'b', 'c'], j: 3}, done: false}
 console.log(iterator.next()) // {done: true}
+```
+
+You can use plain strings instead of `fixed` matchers here:
+
+```js
+const abc = seq(['a', 'b', 'c'])
 ```
 
 ### star(matcher)
@@ -168,6 +180,12 @@ console.log(iterator.next()) // {value: {match: ['a'], j: 1}, done: false}
 console.log(iterator.next()) // {value: {match: ['a', 'a'], j: 2}, done: false}
 console.log(iterator.next()) // {value: {match: ['a', 'a', 'a'], j: 3}, done: false}
 console.log(iterator.next()) // {done: true}
+```
+
+You can use a plain string instead of a `fixed` matcher here:
+
+```js
+const astar = star('a')
 ```
 
 ### resolve(unresolveds)
@@ -205,6 +223,12 @@ const iterator = letters('a  b    c', 0)
 console.log(iterator.next()) // {value: {match: ['a', 'b', 'c'], j: 9}, done: false}
 ```
 
+You can use plain strings instead of `fixed` matchers here:
+
+```js
+const letters = wseq(['a', 'b', 'c'], star(' '))
+```
+
 ### wplus(matcher, separator)
 
 Matches one or more of `matcher` separated by `separator`. Separator matches are omitted from the result.
@@ -217,6 +241,12 @@ console.log(iterator.next()) // {value: {match: ['x'], j: 1}, done: false}
 console.log(iterator.next()) // {value: {match: ['x', 'x'], j: 3}, done: false}
 console.log(iterator.next()) // {value: {match: ['x', 'x', 'x'], j: 5}, done: false}
 console.log(iterator.next()) // {done: true}
+```
+
+You can use plain strings instead of `fixed` matchers here:
+
+```js
+const xs = wplus('x', '|')
 ```
 
 ### maybe(matcher)

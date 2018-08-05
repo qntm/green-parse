@@ -81,7 +81,7 @@ const chr = Matcher((string, i) => {
         }
       }
 
-      return {done}
+      return {done: true}
     }
   }
 })
@@ -103,40 +103,35 @@ const unicode = Matcher((string, i) => {
       while (!done) {
         done = true
         const first = i < string.length ? string.charCodeAt(i) : undefined
-        const second = i + 1 < string.length ? string.charCodeAt(i + 1) : undefined
 
-        if (first !== undefined) {
-          if (
-            high <= first &&
-            first < high + range
-          ) {
-            if (
-              second !== undefined &&
-              low <= second &&
-              second < low + range
-            ) {
-              return {
-                value: {
-                  j: i + 1 + 1,
-                  match: string.substr(i, 1 + 1)
-                },
-                done: false
-              }
-            } // else bad UTF-16
-          } else {
-            // BMP
+        if (first === undefined) {
+          continue
+        }
+
+        if (high <= first && first < high + range) {
+          const second = i + 1 < string.length ? string.charCodeAt(i + 1) : undefined
+          if (second !== undefined && low <= second && second < low + range) {
             return {
               value: {
-                j: i + 1,
-                match: string.substr(i, 1)
+                j: i + 1 + 1,
+                match: string.substr(i, 1 + 1)
               },
               done: false
             }
+          } // else bad UTF-16
+        } else {
+          // BMP
+          return {
+            value: {
+              j: i + 1,
+              match: string.substr(i, 1)
+            },
+            done: false
           }
         }
       }
 
-      return {done}
+      return {done: true}
     }
   }
 })
@@ -159,7 +154,7 @@ const fixed = needle => Matcher((string, i) => {
         }
       }
 
-      return {done}
+      return {done: true}
     }
   }
 })
@@ -191,14 +186,14 @@ const or = inners => Matcher((string, i) => {
           innerId++
           if (innerId in inners) {
             const inner = inners[innerId]
-            iterator = inner(string, i)
+            iterator = (typeof inner === 'string' ? fixed(inner) : inner)(string, i)
           } else {
             done = true
           }
         }
       }
 
-      return {done}
+      return {done: true}
     }
   }
 })
@@ -210,7 +205,7 @@ const or = inners => Matcher((string, i) => {
   the `depth` variable.
 */
 const seq = inners => Matcher((string, i) => {
-  const stack = []
+  const stack = [] // each frame has an `iterator` and a `value`
   let done = false
   let depth = 0
   return {
@@ -239,14 +234,16 @@ const seq = inners => Matcher((string, i) => {
               depth++
             }
           } else {
+            const inner = inners[depth]
+            const iterator = (typeof inner === 'string' ? fixed(inner) : inner)(string, depth === 0 ? i : stack[stack.length - 1].value.j)
             stack.push({
-              iterator: inners[depth](string, depth === 0 ? i : stack[stack.length - 1].value.j)
+              iterator: iterator
             })
           }
         }
       }
 
-      return {done}
+      return {done: true}
     }
   }
 })
@@ -281,8 +278,9 @@ const star = inner => Matcher((string, i) => {
               match: stack.map(frame => frame.value.match),
               j: stack.length === 0 ? i : stack[stack.length - 1].value.j
             }
+            const iterator = (typeof inner === 'string' ? fixed(inner) : inner)(string, depth === 0 ? i : stack[stack.length - 1].value.j)
             stack.push({
-              iterator: inner(string, depth === 0 ? i : stack[stack.length - 1].value.j)
+              iterator: iterator
             })
             return {
               value,
@@ -292,7 +290,7 @@ const star = inner => Matcher((string, i) => {
         }
       }
 
-      return {done}
+      return {done: true}
     }
   }
 })
@@ -327,9 +325,10 @@ const resolve = unresolveds => {
   const resolveds = (actualFs => objectMap(actualFs, actualF =>
     actualF(actualFs)
   ))(objectMap(unresolveds, unresolved => fs =>
-    unresolved(objectMap(fs, f => Matcher((...args) =>
-      f(fs).apply(undefined, args)
-    )))
+    unresolved(objectMap(fs, f => Matcher((...args) => {
+      const inner = f(fs)
+      return (typeof inner === 'string' ? fixed(inner) : inner).apply(undefined, args)
+    })))
   ))
 
   // This would be an excellent time to check for null-stars
