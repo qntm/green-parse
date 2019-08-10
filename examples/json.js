@@ -1,8 +1,8 @@
-const {Parser, resolve, seq, fixed, plus, or, unicode, star, wplus, wseq} = require('../src/main.js')
+const {MonoParser, resolve, seq, fixed, or, unicode, wseq} = require('green-parse')
 
-// This object matches JSON strings.
-const jsonMatcher = resolve({
-  topobject: matchers => seq([matchers.WHITESPACE, matchers.object, matchers.WHITESPACE])
+// This object parses JSON strings.
+module.exports = MonoParser(resolve({
+  topValue: matchers => seq([matchers.WHITESPACE, matchers.value, matchers.WHITESPACE])
     .map(([space1, object, space2]) => object),
 
   object: matchers => or([
@@ -68,7 +68,11 @@ const jsonMatcher = resolve({
     .map(([open, string, close]) => string),
 
   'char': matchers => or([
-    unicode.filter(match => match !== '"' && match !== '\\'), // TODO: also exclude controls
+    unicode.filter(match =>
+      match !== '"' &&
+      match !== '\\' &&
+      match.charCodeAt(0) > 0x1F // U+007F DEL is not considered a control character!
+    ),
     fixed('\\"').map(() => '"'),
     fixed('\\\\').map(() => '\\'),
     fixed('\\/').map(() => '/'),
@@ -110,40 +114,4 @@ const jsonMatcher = resolve({
       or('0123456789'.split('').map(fixed)).plus().map(digits => digits.join(''))
     ]).map(([exponent, sign, digits]) => exponent + sign + digits).maybe()
   ]).map(([sign, integer, decimal, exponent]) => Number.parseFloat(sign + integer + decimal + exponent))
-}).topobject
-
-// Needed: `maybe`
-
-const object = jsonMatcher(" { \"string\" : true, \"\\\"\" : false, \"\\u9874asdh\" : [ null, { }, -9488.44E+093 ] } ", 0).next().value.match;
-
-console.log(object)
-console.log(Object.keys(object).length === 3)
-console.log(object.string === true)
-console.log(object['"'] === false)
-console.log(object['\u9874asdh'].length === 3)
-console.log(object['\u9874asdh'][0] === null)
-console.log(Object.keys(object['\u9874asdh'][1]).length === 0)
-console.log(object['\u9874asdh'][2] === -9.48844E+96)
-
-// failure modes
-const strings = [
-  '{ "string ',       // incomplete string
-  '{ "\\UAAAA" ',     // capital U on unicode char
-  '{ "\\u000i" ',     // not enough hex digits on unicode char
-  '{ "a" : tru ',     // incomplete "true"
-  '{ "a" :  +9 ',     // leading +
-  '{ "a" :  9. ',     // missing decimal digits
-  '{ "a" :  0a8.52 ', // extraneous "a"
-  '{ "a" :  8E ',     // missing exponent
-  '{ "a" :  08 ',     // Two numbers side by side.
-  '[ "a" ,  8 ]',     // Not an object at the top level.
-  ' "a" ',            // Not an object at the top level.
-  '{"\x00"    :7}',   // string contains a literal control character
-  '{"\xC2\x9F":8}',   // string contains a literal control character
-  '{"\n"      :9}',   // string contains a literal control character
-  '{"\r"      :1}',   // string contains a literal control character
-  '{"\t"      :2}'    // string contains a literal control character
-]
-strings.forEach(string => {
-  console.log(jsonMatcher(string, 0).next().done === true)
-})
+}).topValue)
