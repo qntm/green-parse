@@ -1,4 +1,4 @@
-const {Parser, resolve, seq, fixed, or, unicode, wseq, maybe} = require('../src/main.js')
+const { Parser, resolve, seq, fixed, or, unicode, wseq, maybe } = require('../src/main.js')
 
 // This object matches strings conforming to Wirth syntax notation.
 // The output value is a matcher for strings conforming to the syntax described in the Wirth grammar.
@@ -8,11 +8,11 @@ const wirthSyntaxMatcher = resolve({
     matchers.PRODUCTIONS,
     matchers.whitespaces.maybe()
   ])
-    .map(([space1, productions, space2]) => ({type: 'SYNTAX', productions})),
+    .map(([space1, productions, space2]) => ({ type: 'SYNTAX', productions })),
 
   PRODUCTIONS: matchers => matchers.PRODUCTION
     .wplus(matchers.whitespaces)
-    .map(productions => ({type: 'PRODUCTIONS', productions})),
+    .map(productions => ({ type: 'PRODUCTIONS', productions })),
 
   PRODUCTION: matchers => wseq([
     matchers.IDENTIFIER,
@@ -20,15 +20,15 @@ const wirthSyntaxMatcher = resolve({
     matchers.EXPRESSION,
     fixed('.')
   ], matchers.whitespaces)
-    .map(([identifier, equals, expression, dot]) => ({type: 'PRODUCTION', identifier, expression})),
+    .map(([identifier, equals, expression, dot]) => ({ type: 'PRODUCTION', identifier, expression })),
 
   EXPRESSION: matchers => matchers.TERM
     .wplus(seq([matchers.whitespaces, fixed('|'), matchers.whitespaces]))
-    .map(terms => ({type: 'EXPRESSION', terms})),
+    .map(terms => ({ type: 'EXPRESSION', terms })),
 
   TERM: matchers => matchers.FACTOR
     .wplus(matchers.whitespaces)
-    .map(factors => ({type: 'TERM', factors})),
+    .map(factors => ({ type: 'TERM', factors })),
 
   FACTOR: matchers => or([
     matchers.IDENTIFIER,
@@ -40,19 +40,19 @@ const wirthSyntaxMatcher = resolve({
 
   OPTIONAL: matchers =>
     wseq([fixed('['), matchers.EXPRESSION, fixed(']')], matchers.whitespaces)
-      .map(([bracket1, expression, bracket2]) => ({type: 'OPTIONAL', expression})),
+      .map(([bracket1, expression, bracket2]) => ({ type: 'OPTIONAL', expression })),
 
   GROUP: matchers =>
     wseq([fixed('('), matchers.EXPRESSION, fixed(')')], matchers.whitespaces)
-      .map(([paren1, expression, paren2]) => ({type: 'GROUP', expression})),
+      .map(([paren1, expression, paren2]) => ({ type: 'GROUP', expression })),
 
   STAR: matchers =>
     wseq([fixed('{'), matchers.EXPRESSION, fixed('}')], matchers.whitespaces)
-      .map(([brace1, expression, brace2]) => ({type: 'STAR', expression})),
+      .map(([brace1, expression, brace2]) => ({ type: 'STAR', expression })),
 
   IDENTIFIER: matchers => matchers.letter.plus()
     .map(letters => letters.join(''))
-    .map(identifier => ({type: 'IDENTIFIER', identifier})),
+    .map(identifier => ({ type: 'IDENTIFIER', identifier })),
 
   LITERAL: matchers => seq([
     fixed('"'),
@@ -60,7 +60,7 @@ const wirthSyntaxMatcher = resolve({
       .map(characters => characters.join('')),
     fixed('"')
   ])
-    .map(([quote1, chars, quote2]) => ({type: 'LITERAL', chars})),
+    .map(([quote1, chars, quote2]) => ({ type: 'LITERAL', chars })),
 
   letter: matchers =>
     or('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(ch => fixed(ch))),
@@ -77,15 +77,15 @@ const wirthSyntaxMatcher = resolve({
 
   const constructMatcher = (matchers, thing) =>
     thing.type === 'EXPRESSION' ? or(thing.terms.map(term => constructMatcher(matchers, term)))
-    : thing.type === 'TERM' ? seq(thing.factors.map(factor => constructMatcher(matchers, factor)))
-    : thing.type === 'IDENTIFIER' ? matchers[thing.identifier]
-    : thing.type === 'LITERAL' ? fixed(thing.chars)
-    : thing.type === 'OPTIONAL' ? maybe(constructMatcher(matchers, thing.expression))
-    : thing.type === 'GROUP' ? seq([constructMatcher(matchers, thing.expression)])
-    : thing.type === 'STAR' ? constructMatcher(matchers, thing.expression).star()
-    : (() => {
-      throw Error('Unrecognised type: ' + thing.type)
-    })()
+      : thing.type === 'TERM' ? seq(thing.factors.map(factor => constructMatcher(matchers, factor)))
+        : thing.type === 'IDENTIFIER' ? matchers[thing.identifier]
+          : thing.type === 'LITERAL' ? fixed(thing.chars)
+            : thing.type === 'OPTIONAL' ? maybe(constructMatcher(matchers, thing.expression))
+              : thing.type === 'GROUP' ? seq([constructMatcher(matchers, thing.expression)])
+                : thing.type === 'STAR' ? constructMatcher(matchers, thing.expression).star()
+                  : (() => {
+                    throw Error('Unrecognised type: ' + thing.type)
+                  })()
 
   syntax.productions.productions.forEach(production => {
     const identifier = production.identifier.identifier

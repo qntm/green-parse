@@ -2,78 +2,78 @@
 
 'use strict'
 
-const {fixed, or, seq, wplus, resolve, star, Parser} = require('../src/main.js')
+const { fixed, or, seq, wplus, resolve, star, Parser } = require('../src/main.js')
 
 describe('grammar school', () => {
   it('fixed', () => {
     const iterator = fixed('a')('a', 0)
-    expect(iterator.next()).toEqual({value: {j: 1, match: 'a'}, done: false})
-    expect(iterator.next()).toEqual({done: true})
+    expect(iterator.next()).toEqual({ value: { j: 1, match: 'a' }, done: false })
+    expect(iterator.next()).toEqual({ done: true })
   })
 
   const matchLetter = or('abcdefghjklmnopqrstuvwxyz'.split('').map(fixed))
 
   it('matchLetter', () => {
     const iterator = matchLetter('f', 0)
-    expect(iterator.next()).toEqual({value: {j: 1, match: 'f'}, done: false})
-    expect(iterator.next()).toEqual({done: true})
+    expect(iterator.next()).toEqual({ value: { j: 1, match: 'f' }, done: false })
+    expect(iterator.next()).toEqual({ done: true })
   })
 
   const matchDigit = or('0123456789'.split('').map(fixed))
 
   it('matchDigit', () => {
     const iterator = matchDigit('1', 0)
-    expect(iterator.next()).toEqual({value: {j: 1, match: '1'}, done: false})
-    expect(iterator.next()).toEqual({done: true})
+    expect(iterator.next()).toEqual({ value: { j: 1, match: '1' }, done: false })
+    expect(iterator.next()).toEqual({ done: true })
   })
 
   const matchString = seq([fixed("'"), matchDigit, fixed("'")])
-    .map(([open, string, close]) => ({string}))
+    .map(([open, string, close]) => ({ string }))
 
   it('matchString', () => {
     const iterator = matchString("'0'", 0)
-    expect(iterator.next()).toEqual({value: {j: 3, match: {string: '0'}}, done: false})
-    expect(iterator.next()).toEqual({done: true})
+    expect(iterator.next()).toEqual({ value: { j: 3, match: { string: '0' } }, done: false })
+    expect(iterator.next()).toEqual({ done: true })
   })
 
   const matchNonTerminal = matchLetter
-    .map(nonTerminal => ({nonTerminal}))
+    .map(nonTerminal => ({ nonTerminal }))
 
   const matchTerm = or([matchString, matchNonTerminal])
 
   it('matchTerm', () => {
     const iterator = matchTerm('b', 0)
-    expect(iterator.next().value).toEqual({j: 1, match: {nonTerminal: 'b'}})
+    expect(iterator.next().value).toEqual({ j: 1, match: { nonTerminal: 'b' } })
 
     const iterator2 = matchTerm("'5'", 0)
-    expect(iterator2.next().value).toEqual({j: 3, match: {string: '5'}})
+    expect(iterator2.next().value).toEqual({ j: 3, match: { string: '5' } })
   })
 
   const matchStarredTerm = seq([matchTerm, fixed('*')])
-    .map(([starredTerm, star]) => ({starredTerm}))
+    .map(([starredTerm, star]) => ({ starredTerm }))
 
   it('matchStarredTerm', () => {
     const iterator = matchStarredTerm('b*', 0)
-    expect(iterator.next().value).toEqual({j: 2, match: {starredTerm: {nonTerminal: 'b'}}})
+    expect(iterator.next().value).toEqual({ j: 2, match: { starredTerm: { nonTerminal: 'b' } } })
 
     const iterator2 = matchStarredTerm("'5'*", 0)
-    expect(iterator2.next().value).toEqual({j: 4, match: {starredTerm: {string: '5'}}})
+    expect(iterator2.next().value).toEqual({ j: 4, match: { starredTerm: { string: '5' } } })
   })
 
   const matchMaybeStarredTerm = or([matchStarredTerm, matchTerm])
 
   it('matchMaybeStarredTerm', () => {
     const iterator = matchMaybeStarredTerm('b', 0)
-    expect(iterator.next().value).toEqual({j: 1, match: {nonTerminal: 'b'}})
+    expect(iterator.next().value).toEqual({ j: 1, match: { nonTerminal: 'b' } })
 
     const iterator2 = matchMaybeStarredTerm('b*', 0)
-    expect(iterator2.next().value).toEqual({j: 2, match: {starredTerm: {nonTerminal: 'b'}}})
+    expect(iterator2.next().value).toEqual({ j: 2, match: { starredTerm: { nonTerminal: 'b' } } })
 
     const iterator3 = matchMaybeStarredTerm("'5'", 0)
-    expect(iterator3.next().value).toEqual({j: 3, match: {string: '5'}})
+    expect(iterator3.next().value).toEqual({ j: 3, match: { string: '5' } })
 
     const iterator4 = matchMaybeStarredTerm("'5'*", 0)
-    expect(iterator4.next().value).toEqual({j: 4, match: {starredTerm: {string: '5'}}})
+    expect(iterator4.next().value).toEqual({ j: 4, match: { starredTerm: { string: '5' } } })
   })
 
   const matchSequence = matchMaybeStarredTerm.plus()
@@ -84,40 +84,40 @@ describe('grammar school', () => {
     const iterator = matchProduction("a|a'5'*abc", 0)
     expect(iterator.next().value).toEqual({
       j: 1,
-      match: [[{nonTerminal: 'a'}]]
+      match: [[{ nonTerminal: 'a' }]]
     })
     expect(iterator.next().value).toEqual({
       j: 3,
-      match: [[{nonTerminal: 'a'}], [{nonTerminal: 'a'}]]
+      match: [[{ nonTerminal: 'a' }], [{ nonTerminal: 'a' }]]
     })
     expect(iterator.next().value).toEqual({
       j: 7,
-      match: [[{nonTerminal: 'a'}], [{nonTerminal: 'a'}, {starredTerm: {string: '5'}}]]
+      match: [[{ nonTerminal: 'a' }], [{ nonTerminal: 'a' }, { starredTerm: { string: '5' } }]]
     })
     expect(iterator.next().value).toEqual({
       j: 8,
-      match: [[{nonTerminal: 'a'}], [{nonTerminal: 'a'}, {starredTerm: {string: '5'}}, {nonTerminal: 'a'}]]
+      match: [[{ nonTerminal: 'a' }], [{ nonTerminal: 'a' }, { starredTerm: { string: '5' } }, { nonTerminal: 'a' }]]
     })
     expect(iterator.next().value).toEqual({
       j: 9,
-      match: [[{nonTerminal: 'a'}], [{nonTerminal: 'a'}, {starredTerm: {string: '5'}}, {nonTerminal: 'a'}, {nonTerminal: 'b'}]]
+      match: [[{ nonTerminal: 'a' }], [{ nonTerminal: 'a' }, { starredTerm: { string: '5' } }, { nonTerminal: 'a' }, { nonTerminal: 'b' }]]
     })
     expect(iterator.next().value).toEqual({
       j: 10,
-      match: [[{nonTerminal: 'a'}], [{nonTerminal: 'a'}, {starredTerm: {string: '5'}}, {nonTerminal: 'a'}, {nonTerminal: 'b'}, {nonTerminal: 'c'}]]
+      match: [[{ nonTerminal: 'a' }], [{ nonTerminal: 'a' }, { starredTerm: { string: '5' } }, { nonTerminal: 'a' }, { nonTerminal: 'b' }, { nonTerminal: 'c' }]]
     })
 
     // This one is last, because of depth-first traversal
     expect(iterator.next().value).toEqual({
       j: 6,
-      match: [[{nonTerminal: 'a'}], [{nonTerminal: 'a'}, {string: '5'}]]
+      match: [[{ nonTerminal: 'a' }], [{ nonTerminal: 'a' }, { string: '5' }]]
     })
-    expect(iterator.next()).toEqual({done: true})
+    expect(iterator.next()).toEqual({ done: true })
   })
 
   const matchLeft = matchLetter
   const matchRule = seq([matchLeft, fixed(':='), matchProduction, fixed('\n')])
-    .map(([left, equals, production, right]) => ({left, production}))
+    .map(([left, equals, production, right]) => ({ left, production }))
 
   it('matchRule', () => {
     const iterator = matchRule("a:='0'b'1'\n", 0)
@@ -125,16 +125,16 @@ describe('grammar school', () => {
       j: 11,
       match: {
         left: 'a',
-        production: [[{string: '0'}, {nonTerminal: 'b'}, {string: '1'}]]
+        production: [[{ string: '0' }, { nonTerminal: 'b' }, { string: '1' }]]
       }
     })
-    expect(iterator.next()).toEqual({done: true})
+    expect(iterator.next()).toEqual({ done: true })
   })
 
   const matchRules = matchRule.plus()
     .map(match => {
       const byName = {}
-      match.forEach(({left, production}) => {
+      match.forEach(({ left, production }) => {
         byName[left] = production
       })
       return byName
@@ -145,14 +145,14 @@ describe('grammar school', () => {
     expect(iterator.next().value).toEqual({
       j: 11,
       match: {
-        a: [[{string: '0'}, {nonTerminal: 'b'}, {string: '1'}]]
+        a: [[{ string: '0' }, { nonTerminal: 'b' }, { string: '1' }]]
       }
     })
     expect(iterator.next().value).toEqual({
       j: 23,
       match: {
-        a: [[{string: '0'}, {nonTerminal: 'b'}, {string: '1'}]],
-        b: [[{string: '2'}], [{starredTerm: {string: '3'}}]]
+        a: [[{ string: '0' }, { nonTerminal: 'b' }, { string: '1' }]],
+        b: [[{ string: '2' }], [{ starredTerm: { string: '3' } }]]
       }
     })
   })
@@ -162,8 +162,8 @@ describe('grammar school', () => {
   it('parseRules', () => {
     const iterator = parseRules("a:='0'b'1'\nb:='2'|'3'*\n", 0)
     expect(iterator.next().value).toEqual({
-      a: [[{string: '0'}, {nonTerminal: 'b'}, {string: '1'}]],
-      b: [[{string: '2'}], [{starredTerm: {string: '3'}}]]
+      a: [[{ string: '0' }, { nonTerminal: 'b' }, { string: '1' }]],
+      b: [[{ string: '2' }], [{ starredTerm: { string: '3' } }]]
     })
   })
 
@@ -198,7 +198,7 @@ describe('grammar school', () => {
       const iterator = parseRules("a:='0'\n", 0)
       const rules = iterator.next().value
       expect(rules).toEqual({
-        a: [[{string: '0'}]]
+        a: [[{ string: '0' }]]
       })
 
       const matchers = rulesToMatchers(rules)
@@ -213,7 +213,7 @@ describe('grammar school', () => {
       const iterator = parseRules("a:='3'*\n", 0)
       const rules = iterator.next().value
       expect(rules).toEqual({
-        a: [[{starredTerm: {string: '3'}}]]
+        a: [[{ starredTerm: { string: '3' } }]]
       })
 
       const matchers = rulesToMatchers(rules)
@@ -232,7 +232,7 @@ describe('grammar school', () => {
       const iterator = parseRules("a:='0''3'*'1'\n", 0)
       const rules = iterator.next().value
       expect(rules).toEqual({
-        a: [[{string: '0'}, {starredTerm: {string: '3'}}, {string: '1'}]]
+        a: [[{ string: '0' }, { starredTerm: { string: '3' } }, { string: '1' }]]
       })
 
       const matchers = rulesToMatchers(rules)
@@ -247,8 +247,8 @@ describe('grammar school', () => {
       const iterator = parseRules("a:='0'b'1'\nb:='2'|'3'*\n", 0)
       const rules = iterator.next().value
       expect(rules).toEqual({
-        a: [[{string: '0'}, {nonTerminal: 'b'}, {string: '1'}]],
-        b: [[{string: '2'}], [{starredTerm: {string: '3'}}]]
+        a: [[{ string: '0' }, { nonTerminal: 'b' }, { string: '1' }]],
+        b: [[{ string: '2' }], [{ starredTerm: { string: '3' } }]]
       })
 
       const matchers = rulesToMatchers(rules)

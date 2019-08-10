@@ -43,12 +43,12 @@ const Matcher = inner => Object.assign(
   {
     // Transform all of the matches
     map: f => Matcher((string, i) =>
-      mapIterator(inner(string, i), ({match, j}) => ({match: f(match), j}))
+      mapIterator(inner(string, i), ({ match, j }) => ({ match: f(match), j }))
     ),
 
     // Only return those matches which pass the filter
     filter: f => Matcher((string, i) =>
-      filterIterator(inner(string, i), ({match}) => f(match))
+      filterIterator(inner(string, i), ({ match }) => f(match))
     ),
 
     star: () => star(inner),
@@ -81,7 +81,7 @@ const chr = Matcher((string, i) => {
         }
       }
 
-      return {done: true}
+      return { done: true }
     }
   }
 })
@@ -131,7 +131,7 @@ const unicode = Matcher((string, i) => {
         }
       }
 
-      return {done: true}
+      return { done: true }
     }
   }
 })
@@ -154,7 +154,7 @@ const fixed = needle => Matcher((string, i) => {
         }
       }
 
-      return {done: true}
+      return { done: true }
     }
   }
 })
@@ -193,7 +193,7 @@ const or = inners => Matcher((string, i) => {
         }
       }
 
-      return {done: true}
+      return { done: true }
     }
   }
 })
@@ -243,7 +243,7 @@ const seq = inners => Matcher((string, i) => {
         }
       }
 
-      return {done: true}
+      return { done: true }
     }
   }
 })
@@ -290,7 +290,7 @@ const star = inner => Matcher((string, i) => {
         }
       }
 
-      return {done: true}
+      return { done: true }
     }
   }
 })

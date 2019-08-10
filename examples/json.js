@@ -1,4 +1,4 @@
-const {MonoParser, resolve, seq, fixed, or, unicode, wseq} = require('green-parse')
+const { MonoParser, resolve, seq, fixed, or, unicode, wseq } = require('green-parse')
 
 // This object parses JSON strings.
 module.exports = MonoParser(resolve({
@@ -23,14 +23,14 @@ module.exports = MonoParser(resolve({
   ], matchers.WHITESPACE)
     .map(([open, keyvalues, close]) => {
       const obj = {}
-      keyvalues.forEach(({key, value}) => {
+      keyvalues.forEach(({ key, value }) => {
         obj[key] = value
       })
       return obj
     }),
 
   keyvalue: matchers => wseq([matchers.string, fixed(':'), matchers.value], matchers.WHITESPACE)
-    .map(([key, colon, value]) => ({key, value})),
+    .map(([key, colon, value]) => ({ key, value })),
 
   array: matchers => or([
     matchers.fullarray,
@@ -67,7 +67,7 @@ module.exports = MonoParser(resolve({
   ])
     .map(([open, string, close]) => string),
 
-  'char': matchers => or([
+  char: matchers => or([
     unicode.filter(match =>
       match !== '"' &&
       match !== '\\' &&
