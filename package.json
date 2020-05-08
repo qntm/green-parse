@@ -1,6 +1,6 @@
 {
   "name": "green-parse",
-  "version": "0.0.6",
+  "version": "1.0.0",
   "description": "A little recursive descent parsing library",
   "homepage": "https://github.com/qntm/green-parse",
   "repository": {
