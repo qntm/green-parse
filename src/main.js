@@ -11,6 +11,9 @@ const mapIterator = (iterator, f) => ({
       value: f(result.value),
       done: result.done
     } : result
+  },
+  [Symbol.iterator]: function () {
+    return this
   }
 })
 
@@ -23,6 +26,9 @@ const filterIterator = (iterator, f) => ({
       }
       // Do nothing, keep iterating
     }
+  },
+  [Symbol.iterator]: function () {
+    return this
   }
 })
 
@@ -82,6 +88,9 @@ const chr = Matcher((string, i) => {
       }
 
       return { done: true }
+    },
+    [Symbol.iterator]: function () {
+      return this
     }
   }
 })
@@ -132,6 +141,9 @@ const unicode = Matcher((string, i) => {
       }
 
       return { done: true }
+    },
+    [Symbol.iterator]: function () {
+      return this
     }
   }
 })
@@ -155,6 +167,9 @@ const fixed = needle => Matcher((string, i) => {
       }
 
       return { done: true }
+    },
+    [Symbol.iterator]: function () {
+      return this
     }
   }
 })
@@ -194,6 +209,9 @@ const or = inners => Matcher((string, i) => {
       }
 
       return { done: true }
+    },
+    [Symbol.iterator]: function () {
+      return this
     }
   }
 })
@@ -244,6 +262,9 @@ const seq = inners => Matcher((string, i) => {
       }
 
       return { done: true }
+    },
+    [Symbol.iterator]: function () {
+      return this
     }
   }
 })
@@ -291,6 +312,9 @@ const star = inner => Matcher((string, i) => {
       }
 
       return { done: true }
+    },
+    [Symbol.iterator]: function () {
+      return this
     }
   }
 })
