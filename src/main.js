@@ -4,34 +4,6 @@
 
 'use strict'
 
-const mapIterator = (iterator, f) => ({
-  next: () => {
-    const result = iterator.next()
-    return 'value' in result ? {
-      value: f(result.value),
-      done: result.done
-    } : result
-  },
-  [Symbol.iterator]: function () {
-    return this
-  }
-})
-
-const filterIterator = (iterator, f) => ({
-  next: () => {
-    while (true) {
-      const result = iterator.next()
-      if (!('value' in result) || f(result.value)) {
-        return result
-      }
-      // Do nothing, keep iterating
-    }
-  },
-  [Symbol.iterator]: function () {
-    return this
-  }
-})
-
 // It is assumed that `i` is between 0 and `string.length` inclusive.
 
 /**
@@ -48,14 +20,23 @@ const Matcher = inner => Object.assign(
   // function.
   {
     // Transform all of the matches
-    map: f => Matcher((string, i) =>
-      mapIterator(inner(string, i), ({ match, j }) => ({ match: f(match), j }))
-    ),
+    map: f => Matcher(function* (string, i) {
+      for (const value of inner(string, i)) {
+        yield {
+          match: f(value.match),
+          j: value.j
+        }
+      }
+    }),
 
     // Only return those matches which pass the filter
-    filter: f => Matcher((string, i) =>
-      filterIterator(inner(string, i), ({ match }) => f(match))
-    ),
+    filter: f => Matcher(function* (string, i) {
+      for (const value of inner(string, i)) {
+        if (f(value.match)) {
+          yield value
+        }
+      }
+    }),
 
     star: () => star(inner),
     plus: () => plus(inner),
@@ -70,27 +51,11 @@ const Matcher = inner => Object.assign(
   Match any single character from the JS string. Note that a JS string
   is a sequence of 16-bit code units, not a sequence of Unicode characters
 */
-const chr = Matcher((string, i) => {
-  let done = false
-  return {
-    next: () => {
-      while (!done) {
-        done = true
-        if (i < string.length) {
-          return {
-            value: {
-              j: i + 1,
-              match: string.substr(i, 1)
-            },
-            done: false
-          }
-        }
-      }
-
-      return { done: true }
-    },
-    [Symbol.iterator]: function () {
-      return this
+const chr = Matcher(function* (string, i) {
+  if (i < string.length) {
+    yield {
+      j: i + 1,
+      match: string.substr(i, 1)
     }
   }
 })
@@ -101,75 +66,39 @@ const chr = Matcher((string, i) => {
   2 for astral planes. This can FAIL if the string is not properly
   encoded i.e. surrogates are not paired correctly.
 */
-const unicode = Matcher((string, i) => {
-  const range = 1 << 10
-  const high = 0xD800
-  const low = 0xDC00
+const unicode = Matcher(function* (string, i) {
+  if (i >= string.length) {
+    return
+  }
 
-  let done = false
-  return {
-    next: () => {
-      while (!done) {
-        done = true
-        const first = i < string.length ? string.charCodeAt(i) : undefined
+  const first = string.charAt(i)
 
-        if (first === undefined) {
-          continue
-        }
-
-        if (high <= first && first < high + range) {
-          const second = i + 1 < string.length ? string.charCodeAt(i + 1) : undefined
-          if (second !== undefined && low <= second && second < low + range) {
-            return {
-              value: {
-                j: i + 1 + 1,
-                match: string.substr(i, 1 + 1)
-              },
-              done: false
-            }
-          } // else bad UTF-16
-        } else {
-          // BMP
-          return {
-            value: {
-              j: i + 1,
-              match: string.substr(i, 1)
-            },
-            done: false
-          }
-        }
+  if (0xD800 <= first && first < 0xDC00) {
+    if (i + 1 >= string.length) {
+      return
+    }
+    const second = string.charAt(i + 1)
+    if (0xDC00 <= second && second < 0xE000) {
+      yield {
+        j: i + 1 + 1,
+        match: first + second
       }
-
-      return { done: true }
-    },
-    [Symbol.iterator]: function () {
-      return this
+    } // else bad UTF-16
+  } else {
+    // BMP
+    yield {
+      j: i + 1,
+      match: first
     }
   }
 })
 
 // Also there are class methods on the constructor function.
-const fixed = needle => Matcher((string, i) => {
-  let done = false
-  return {
-    next: () => {
-      while (!done) {
-        done = true
-        if (string.substr(i, needle.length) === needle) {
-          return {
-            value: {
-              j: i + needle.length,
-              match: needle
-            },
-            done: false
-          }
-        }
-      }
-
-      return { done: true }
-    },
-    [Symbol.iterator]: function () {
-      return this
+const fixed = needle => Matcher(function* (string, i) {
+  if (string.substr(i, needle.length) === needle) {
+    yield {
+      j: i + needle.length,
+      match: needle
     }
   }
 })
@@ -178,96 +107,41 @@ const fixed = needle => Matcher((string, i) => {
   Returns all the results from the first matcher and then all the results from
   the next matcher and so on
 */
-const or = inners => Matcher((string, i) => {
-  let done = false
-  let innerId = -1
-  let iterator
-  return {
-    next: () => {
-      while (!done) {
-        // We need to account for the case when the iterator is undefined,
-        // since that's how this whole shebang will start out.
-        // That also means that it's safe to exit the loop with the iterator
-        // currently undefined, rather than just keep trying to find the next
-        // "good" iterator inside this loop somehow.
-        if (iterator) {
-          const result = iterator.next()
-          if (result.done) {
-            iterator = undefined
-          } else {
-            return result
-          }
-        } else {
-          innerId++
-          if (innerId in inners) {
-            const inner = inners[innerId]
-            iterator = (typeof inner === 'string' ? fixed(inner) : inner)(string, i)
-          } else {
-            done = true
-          }
-        }
-      }
+const or = inners => {
+  inners = inners.map(inner => typeof inner === 'string' ? fixed(inner) : inner)
 
-      return { done: true }
-    },
-    [Symbol.iterator]: function () {
-      return this
+  return Matcher(function* (string, i) {
+    for (const inner of inners) {
+      yield* inner(string, i)
     }
-  }
-})
+  })
+}
 
 /**
   For each result from the first matcher, returns all the results from the
   next matcher, and so on. Depth-first.
-  TODO: it is probably possible to simplify this, maybe scrap
-  the `depth` variable.
 */
-const seq = inners => Matcher((string, i) => {
-  const stack = [] // each frame has an `iterator` and a `value`
-  let done = false
-  let depth = 0
-  return {
-    next: () => {
-      while (!done) {
-        if (depth === -1) {
-          done = true
-        } else if (depth === inners.length) {
-          const value = {
-            match: stack.map(frame => frame.value.match),
-            j: stack.length === 0 ? i : stack[stack.length - 1].value.j
-          }
-          depth--
-          return {
-            value,
-            done: false
-          }
-        } else {
-          if (depth in stack) {
-            const result = stack[depth].iterator.next()
-            if (result.done) {
-              stack.pop()
-              depth--
-            } else {
-              stack[depth].value = result.value
-              depth++
-            }
-          } else {
-            const inner = inners[depth]
-            const iterator = (typeof inner === 'string' ? fixed(inner) : inner)(string, depth === 0 ? i : stack[stack.length - 1].value.j)
-            stack.push({
-              iterator: iterator
-            })
-          }
+const seq = inners => {
+  inners = inners.map(inner => typeof inner === 'string' ? fixed(inner) : inner)
+
+  return Matcher(function* (string, i) {
+    const recurse = function* (depth, matches, j) {
+      if (depth in inners) {
+        const inner = inners[depth]
+        for (const result of inner(string, j)) {
+          yield* recurse(depth + 1, [...matches, result.match], result.j)
+        }
+      } else {
+        yield {
+          match: matches,
+          j
         }
       }
-
-      return { done: true }
-    },
-    [Symbol.iterator]: function () {
-      return this
     }
-  }
-})
+
+    yield* recurse(0, [], i)
+  })
+}
 
 /**
   Returns an array of the matches. Goes depth-first.
@@ -275,49 +149,23 @@ const seq = inners => Matcher((string, i) => {
   `inner` doesn't have to be a full-blown `Matcher` object,
   it just needs to be a generator function whose results are like {j, match}.
 */
-const star = inner => Matcher((string, i) => {
-  const stack = []
-  let done = false
-  let depth = 0
-  return {
-    next: () => {
-      while (!done) {
-        if (depth === -1) {
-          done = true
-        } else {
-          if (depth in stack) {
-            const result = stack[depth].iterator.next()
-            if (result.done) {
-              stack.pop()
-              depth--
-            } else {
-              stack[depth].value = result.value
-              depth++
-            }
-          } else {
-            const value = {
-              match: stack.map(frame => frame.value.match),
-              j: stack.length === 0 ? i : stack[stack.length - 1].value.j
-            }
-            const iterator = (typeof inner === 'string' ? fixed(inner) : inner)(string, depth === 0 ? i : stack[stack.length - 1].value.j)
-            stack.push({
-              iterator: iterator
-            })
-            return {
-              value,
-              done: false
-            }
-          }
-        }
-      }
+const star = inner => {
+  inner = typeof inner === 'string' ? fixed(inner) : inner
 
-      return { done: true }
-    },
-    [Symbol.iterator]: function () {
-      return this
+  return Matcher(function* (string, i) {
+    const recurse = function* (depth, matches, j) {
+      yield {
+        match: matches,
+        j
+      }
+      for (const result of inner(string, j)) {
+        yield* recurse(depth + 1, [...matches, result.match], result.j)
+      }
     }
-  }
-})
+
+    yield* recurse(0, [], i)
+  })
+}
 
 /**
   Resolve an object full of mutually recursive matchers together!
@@ -328,9 +176,9 @@ const star = inner => Matcher((string, i) => {
     (actualF =>
       actualF(actualF)
     )(f =>
-      unresolved((...args) =>
-        f(f).apply(undefined, args)
-      )
+      unresolved(function () {
+        f(f).apply(this, arguments)
+      })
     )
 
   and note the location of the `Matcher` construction call which
@@ -338,13 +186,11 @@ const star = inner => Matcher((string, i) => {
   functions, the result will not be.
 */
 const resolve = unresolveds => {
-  const objectMap = (object, f) => {
-    var mapped = {}
-    Object.keys(object).forEach(key => {
-      mapped[key] = f(object[key], key, object)
-    })
-    return mapped
-  }
+  const objectMap = (object, f) =>
+    Object.fromEntries(
+      Object.entries(object)
+        .map(([key, value]) => [key, f(value, key, object)])
+    )
 
   const resolveds = (actualFs => objectMap(actualFs, actualF =>
     actualF(actualFs)
@@ -367,7 +213,7 @@ const resolve = unresolveds => {
   Very familiar
 */
 const plus = inner => seq([inner, star(inner)])
-  .map(([first, rest]) => [first].concat(rest))
+  .map(([first, rest]) => [first, ...rest])
 
 /**
   Match a sequence of things, separated by some separator. Don't allow
@@ -390,7 +236,7 @@ const wseq = (inners, separator) => {
 const wplus = (inner, separator) => seq([
   inner,
   seq([separator, inner]).map(([separator, inner]) => inner).star()
-]).map(([first, rest]) => [first].concat(rest))
+]).map(([first, rest]) => [first, ...rest])
 
 const maybe = inner => or([inner, fixed('')])
 
@@ -403,14 +249,13 @@ const maybe = inner => or([inner, fixed('')])
   `inner` doesn't have to be a full-blown `Matcher` object, as long as it
   returns generators which generate values of the form `{j, match}`.
 */
-const Parser = inner =>
-  string => mapIterator(
-    filterIterator(
-      inner(string, 0),
-      value => value.j === string.length
-    ),
-    value => value.match
-  )
+const Parser = inner => function* (string) {
+  for (const value of inner(string, 0)) {
+    if (value.j === string.length) {
+      yield value.match
+    }
+  }
+}
 
 /**
   Wraps up the supplied matcher in an object which parses the entire string
@@ -421,17 +266,7 @@ const Parser = inner =>
 const MonoParser = inner => {
   const parser = Parser(inner)
   return string => {
-    const results = []
-    const iterator = parser(string)
-    while (true) {
-      const result = iterator.next()
-      if ('value' in result) {
-        results.push(result.value)
-      }
-      if (result.done) {
-        break
-      }
-    }
+    const results = [...parser(string)]
 
     if (results.length !== 1) {
       throw Error('Expected 1 result, got ' + results.length)

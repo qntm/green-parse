@@ -8,7 +8,7 @@ describe('grammar school', () => {
   it('fixed', () => {
     const iterator = fixed('a')('a', 0)
     expect(iterator.next()).toEqual({ value: { j: 1, match: 'a' }, done: false })
-    expect(iterator.next()).toEqual({ done: true })
+    expect(iterator.next()).toEqual({ value: undefined, done: true })
   })
 
   const matchLetter = or('abcdefghjklmnopqrstuvwxyz'.split('').map(fixed))
@@ -16,7 +16,7 @@ describe('grammar school', () => {
   it('matchLetter', () => {
     const iterator = matchLetter('f', 0)
     expect(iterator.next()).toEqual({ value: { j: 1, match: 'f' }, done: false })
-    expect(iterator.next()).toEqual({ done: true })
+    expect(iterator.next()).toEqual({ value: undefined, done: true })
   })
 
   const matchDigit = or('0123456789'.split('').map(fixed))
@@ -24,7 +24,7 @@ describe('grammar school', () => {
   it('matchDigit', () => {
     const iterator = matchDigit('1', 0)
     expect(iterator.next()).toEqual({ value: { j: 1, match: '1' }, done: false })
-    expect(iterator.next()).toEqual({ done: true })
+    expect(iterator.next()).toEqual({ value: undefined, done: true })
   })
 
   const matchString = seq([fixed("'"), matchDigit, fixed("'")])
@@ -33,7 +33,7 @@ describe('grammar school', () => {
   it('matchString', () => {
     const iterator = matchString("'0'", 0)
     expect(iterator.next()).toEqual({ value: { j: 3, match: { string: '0' } }, done: false })
-    expect(iterator.next()).toEqual({ done: true })
+    expect(iterator.next()).toEqual({ value: undefined, done: true })
   })
 
   const matchNonTerminal = matchLetter
@@ -112,7 +112,7 @@ describe('grammar school', () => {
       j: 6,
       match: [[{ nonTerminal: 'a' }], [{ nonTerminal: 'a' }, { string: '5' }]]
     })
-    expect(iterator.next()).toEqual({ done: true })
+    expect(iterator.next()).toEqual({ value: undefined, done: true })
   })
 
   const matchLeft = matchLetter
@@ -128,7 +128,7 @@ describe('grammar school', () => {
         production: [[{ string: '0' }, { nonTerminal: 'b' }, { string: '1' }]]
       }
     })
-    expect(iterator.next()).toEqual({ done: true })
+    expect(iterator.next()).toEqual({ value: undefined, done: true })
   })
 
   const matchRules = matchRule.plus()
@@ -168,28 +168,35 @@ describe('grammar school', () => {
   })
 
   const rulesToMatchers = rules => {
-    const unresolved = {}
-    Object.keys(rules).forEach(key => {
-      unresolved[key] = matchers => or(rules[key].map(sequence =>
-        seq(sequence.map(term => {
-          if ('starredTerm' in term) {
-            if ('nonTerminal' in term.starredTerm) {
-              return matchers[term.starredTerm.nonTerminal].star()
+    const unresolved = Object.fromEntries(
+      Object.entries(rules).map(([key, rule]) => [
+        key,
+        matchers => or(rule.map(sequence =>
+          seq(sequence.map(term => {
+            if ('starredTerm' in term) {
+              if ('nonTerminal' in term.starredTerm) {
+                return matchers[term.starredTerm.nonTerminal].star()
+              }
+              if ('string' in term.starredTerm) {
+                return fixed(term.starredTerm.string).star()
+              }
             }
-            if ('string' in term.starredTerm) {
-              return fixed(term.starredTerm.string).star()
+            if ('nonTerminal' in term) {
+              if (matchers[term.nonTerminal] === undefined) {
+                console.log(key, matchers, term)
+                throw Error()
+              }
+              return matchers[term.nonTerminal]
             }
-          }
-          if ('nonTerminal' in term) {
-            return matchers[term.nonTerminal]
-          }
-          if ('string' in term) {
-            return fixed(term.string)
-          }
-          throw Error()
-        }))
-      ))
-    })
+            if ('string' in term) {
+              return fixed(term.string)
+            }
+            throw Error()
+          }))
+        ))
+      ])
+    )
+
     return resolve(unresolved)
   }
 
