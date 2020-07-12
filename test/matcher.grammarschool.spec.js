@@ -1,5 +1,3 @@
-/* eslint-env jasmine */
-
 'use strict'
 
 const { fixed, or, seq, wplus, resolve, star, Parser } = require('../src/main.js')
@@ -168,25 +166,21 @@ describe('grammar school', () => {
   })
 
   const rulesToMatchers = rules => {
-    const unresolved = Object.fromEntries(
+    const unresolved = ref => Object.fromEntries(
       Object.entries(rules).map(([key, rule]) => [
         key,
-        matchers => or(rule.map(sequence =>
+        or(rule.map(sequence =>
           seq(sequence.map(term => {
             if ('starredTerm' in term) {
               if ('nonTerminal' in term.starredTerm) {
-                return matchers[term.starredTerm.nonTerminal].star()
+                return ref(term.starredTerm.nonTerminal).star()
               }
               if ('string' in term.starredTerm) {
                 return fixed(term.starredTerm.string).star()
               }
             }
             if ('nonTerminal' in term) {
-              if (matchers[term.nonTerminal] === undefined) {
-                console.log(key, matchers, term)
-                throw Error()
-              }
-              return matchers[term.nonTerminal]
+              return ref(term.nonTerminal)
             }
             if ('string' in term) {
               return fixed(term.string)
@@ -268,15 +262,15 @@ describe('grammar school', () => {
   })
 
   it('equivalent grammar', () => {
-    const grammar = resolve({
-      a: matchers => or([
-        seq([fixed('0'), matchers.b, fixed('1')])
+    const grammar = resolve(ref => ({
+      a: or([
+        seq([fixed('0'), ref('b'), fixed('1')])
       ]),
-      b: matchers => or([
+      b: or([
         seq([fixed('2')]),
         seq([star(fixed('3'))])
       ])
-    })
+    }))
 
     const iterator1 = grammar.a('01', 0)
     expect(iterator1.next().value).toEqual({
@@ -304,15 +298,15 @@ describe('grammar school', () => {
   })
 
   it('simpler syntax', () => {
-    const grammar = resolve({
-      a: matchers => or([
-        seq(['0', matchers.b, '1'])
+    const grammar = resolve(ref => ({
+      a: or([
+        seq(['0', ref('b'), '1'])
       ]),
-      b: matchers => or([
+      b: or([
         seq(['2']),
         seq([star('3')])
       ])
-    })
+    }))
 
     const iterator1 = grammar.a('01', 0)
     expect(iterator1.next().value).toEqual({

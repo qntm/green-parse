@@ -167,44 +167,11 @@ const star = inner => {
   })
 }
 
-/**
-  Resolve an object full of mutually recursive matchers together!
-  The results are all matchers still! Variadic version of the Y
-  combinator. Compare with the regular Y combinator:
-
-  const y = unresolved =>
-    (actualF =>
-      actualF(actualF)
-    )(f =>
-      unresolved(function () {
-        f(f).apply(this, arguments)
-      })
-    )
-
-  and note the location of the `Matcher` construction call which
-  ensures that even though `unresolveds` might be mere generator
-  functions, the result will not be.
-*/
-const resolve = unresolveds => {
-  const objectMap = (object, f) =>
-    Object.fromEntries(
-      Object.entries(object)
-        .map(([key, value]) => [key, f(value, key, object)])
-    )
-
-  const resolveds = (actualFs => objectMap(actualFs, actualF =>
-    actualF(actualFs)
-  ))(objectMap(unresolveds, unresolved => fs =>
-    unresolved(objectMap(fs, f => Matcher((...args) => {
-      const inner = f(fs)
-      return (typeof inner === 'string' ? fixed(inner) : inner).apply(undefined, args)
-    })))
-  ))
-
-  // This would be an excellent time to check for null-stars
-  // and left-recursion somehow
-
-  return resolveds
+const resolve = open => {
+  const closed = open(nonterminal => function () {
+    return closed[nonterminal].apply(this, arguments)
+  })
+  return closed
 }
 
 // Bonuses!

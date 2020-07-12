@@ -1,6 +1,6 @@
 {
   "name": "green-parse",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "A little recursive descent parsing library",
   "homepage": "https://github.com/qntm/green-parse",
   "repository": {
@@ -9,14 +9,13 @@
   },
   "main": "src/main.js",
   "scripts": {
-    "jasmine": "jasmine",
     "standard": "standard",
-    "test": "npm run jasmine -- **/*.spec.js"
+    "test": "npx jest"
   },
   "author": "qntm",
   "license": "MIT",
   "devDependencies": {
-    "jasmine": "^2.99.0",
+    "jest": "^26.1.0",
     "standard": "^13.1.0"
   }
 }

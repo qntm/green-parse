@@ -1,5 +1,3 @@
-/* eslint-env jasmine */
-
 'use strict'
 
 const {
@@ -19,24 +17,12 @@ const {
   MonoParser
 } = require('../src/main.js')
 
-const getAllValuesFrom = iterator => {
-  const values = []
-  while (true) {
-    const result = iterator.next()
-    if (result.done) {
-      break
-    }
-    values.push(result.value)
-  }
-  return values
-}
-
 xdescribe('Matcher', () => {
   describe('constructor', () => {
     it('useless', () => {
       const useless = (string, i) => ({ next: () => ({ done: true }) })
       const matcher = Matcher(useless)
-      expect(getAllValuesFrom(matcher('abc', 1))).toEqual([])
+      expect([...matcher('abc', 1)]).toEqual([])
     })
 
     it('single result', () => {
@@ -63,7 +49,7 @@ xdescribe('Matcher', () => {
         }
       }
       const matcher = Matcher(one)
-      expect(getAllValuesFrom(matcher('abc', 1))).toEqual([{
+      expect([...matcher('abc', 1)]).toEqual([{
         match: 345,
         j: 2
       }])
@@ -75,35 +61,35 @@ xdescribe('Matcher', () => {
   describe('fixed', () => {
     it('works', () => {
       const emptyString = fixed('')
-      expect(getAllValuesFrom(emptyString('aaa', 0))).toEqual([{
+      expect([...emptyString('aaa', 0)]).toEqual([{
         j: 0,
         match: ''
       }])
 
       const a = fixed('a')
-      expect(getAllValuesFrom(a('aaa', 0))).toEqual([{
+      expect([...a('aaa', 0)]).toEqual([{
         j: 1,
         match: 'a'
       }])
 
-      expect(getAllValuesFrom(a('aaa', 1))).toEqual([{
+      expect([...a('aaa', 1)]).toEqual([{
         j: 2,
         match: 'a'
       }])
 
-      expect(getAllValuesFrom(a('aaa', 2))).toEqual([{
+      expect([...a('aaa', 2)]).toEqual([{
         j: 3,
         match: 'a'
       }])
 
-      expect(getAllValuesFrom(a('aaa', 3))).toEqual([])
+      expect([...a('aaa', 3)]).toEqual([])
 
-      expect(getAllValuesFrom(a('baa', 0))).toEqual([])
+      expect([...a('baa', 0)]).toEqual([])
     })
 
     it('map', () => {
       const matcher = fixed('a').map(match => match + match)
-      expect(getAllValuesFrom(matcher('a', 0))).toEqual([{
+      expect([...matcher('a', 0)]).toEqual([{
         j: 1,
         match: 'aa'
       }])
@@ -113,20 +99,20 @@ xdescribe('Matcher', () => {
   describe('or', () => {
     it('works', () => {
       const aorborc = or([fixed('a'), fixed('b'), fixed('c')])
-      expect(getAllValuesFrom(aorborc('a', 0))).toEqual([{
+      expect([...aorborc('a', 0)]).toEqual([{
         j: 1,
         match: 'a'
       }])
 
-      expect(getAllValuesFrom(aorborc('b', 0))).toEqual([{
+      expect([...aorborc('b', 0)]).toEqual([{
         j: 1,
         match: 'b'
       }])
 
-      expect(getAllValuesFrom(aorborc('z', 0))).toEqual([])
+      expect([...aorborc('z', 0)]).toEqual([])
 
       const aora = or([fixed('a'), fixed('a')])
-      expect(getAllValuesFrom(aora('a', 0))).toEqual([{
+      expect([...aora('a', 0)]).toEqual([{
         j: 1,
         match: 'a'
       }, {
@@ -137,20 +123,20 @@ xdescribe('Matcher', () => {
 
     it('promotes strings to fixed matchers', () => {
       const aorborc = or(['a', 'b', 'c'])
-      expect(getAllValuesFrom(aorborc('a', 0))).toEqual([{
+      expect([...aorborc('a', 0)]).toEqual([{
         j: 1,
         match: 'a'
       }])
 
-      expect(getAllValuesFrom(aorborc('b', 0))).toEqual([{
+      expect([...aorborc('b', 0)]).toEqual([{
         j: 1,
         match: 'b'
       }])
 
-      expect(getAllValuesFrom(aorborc('z', 0))).toEqual([])
+      expect([...aorborc('z', 0)]).toEqual([])
 
       const aora = or([fixed('a'), fixed('a')])
-      expect(getAllValuesFrom(aora('a', 0))).toEqual([{
+      expect([...aora('a', 0)]).toEqual([{
         j: 1,
         match: 'a'
       }, {
@@ -161,7 +147,7 @@ xdescribe('Matcher', () => {
 
     it('also works', () => {
       const aorborc = or([or([fixed('a'), fixed('b')]), fixed('c')])
-      expect(getAllValuesFrom(aorborc('b', 0))).toEqual([{
+      expect([...aorborc('b', 0)]).toEqual([{
         j: 1,
         match: 'b'
       }])
@@ -169,7 +155,7 @@ xdescribe('Matcher', () => {
 
     it('also also works', () => {
       const aorborc = or([fixed('a'), or([fixed('b'), fixed('c')])])
-      expect(getAllValuesFrom(aorborc('c', 0))).toEqual([{
+      expect([...aorborc('c', 0)]).toEqual([{
         j: 1,
         match: 'c'
       }])
@@ -177,7 +163,7 @@ xdescribe('Matcher', () => {
 
     it('alternate syntax', () => {
       const aorborc = fixed('a').or(fixed('b')).or(fixed('c'))
-      expect(getAllValuesFrom(aorborc('b', 0))).toEqual([{
+      expect([...aorborc('b', 0)]).toEqual([{
         j: 1,
         match: 'b'
       }])
@@ -187,7 +173,7 @@ xdescribe('Matcher', () => {
   describe('seq', () => {
     it('works for an empty string', () => {
       const emptyString = seq([])
-      expect(getAllValuesFrom(emptyString('a', 0))).toEqual([{
+      expect([...emptyString('a', 0)]).toEqual([{
         j: 0,
         match: []
       }])
@@ -195,19 +181,19 @@ xdescribe('Matcher', () => {
 
     it('works', () => {
       const a = seq([fixed('a')])
-      expect(getAllValuesFrom(a('a', 0))).toEqual([{
+      expect([...a('a', 0)]).toEqual([{
         j: 1,
         match: ['a']
       }])
 
       const aa = seq([fixed('a'), fixed('a')])
-      expect(getAllValuesFrom(aa('aa', 0))).toEqual([{
+      expect([...aa('aa', 0)]).toEqual([{
         j: 2,
         match: ['a', 'a']
       }])
 
       const aaa = seq([fixed('a'), fixed('a'), fixed('a')])
-      expect(getAllValuesFrom(aaa('aaa', 0))).toEqual([{
+      expect([...aaa('aaa', 0)]).toEqual([{
         j: 3,
         match: ['a', 'a', 'a']
       }])
@@ -215,7 +201,7 @@ xdescribe('Matcher', () => {
 
     it('also works', () => {
       const aaa = seq([seq([fixed('a'), fixed('a')]), fixed('a')])
-      expect(getAllValuesFrom(aaa('aaa', 0))).toEqual([{
+      expect([...aaa('aaa', 0)]).toEqual([{
         j: 3,
         match: [['a', 'a'], 'a']
       }])
@@ -223,7 +209,7 @@ xdescribe('Matcher', () => {
 
     it('promotes strings to fixed matchers', () => {
       const aaa = seq([seq(['a', 'a']), 'a'])
-      expect(getAllValuesFrom(aaa('aaa', 0))).toEqual([{
+      expect([...aaa('aaa', 0)]).toEqual([{
         j: 3,
         match: [['a', 'a'], 'a']
       }])
@@ -231,7 +217,7 @@ xdescribe('Matcher', () => {
 
     it('alternate syntax', () => {
       const aaa = fixed('a').seq(fixed('a')).seq(fixed('a'))
-      expect(getAllValuesFrom(aaa('aaa', 0))).toEqual([{
+      expect([...aaa('aaa', 0)]).toEqual([{
         j: 3,
         match: [['a', 'a'], 'a']
       }])
@@ -239,7 +225,7 @@ xdescribe('Matcher', () => {
 
     it('also also works', () => {
       const aaa = seq([fixed('a'), seq([fixed('a'), fixed('a')])])
-      expect(getAllValuesFrom(aaa('aaa', 0))).toEqual([{
+      expect([...aaa('aaa', 0)]).toEqual([{
         j: 3,
         match: ['a', ['a', 'a']]
       }])
@@ -249,7 +235,7 @@ xdescribe('Matcher', () => {
   describe('star', () => {
     it('works', () => {
       const astar = star(fixed('a'))
-      expect(getAllValuesFrom(astar('aaa', 0))).toEqual([{
+      expect([...astar('aaa', 0)]).toEqual([{
         j: 0,
         match: []
       }, {
@@ -266,7 +252,7 @@ xdescribe('Matcher', () => {
 
     it('promotes a string to a fixed matcher', () => {
       const astar = star('a')
-      expect(getAllValuesFrom(astar('aaa', 0))).toEqual([{
+      expect([...astar('aaa', 0)]).toEqual([{
         j: 0,
         match: []
       }, {
@@ -283,7 +269,7 @@ xdescribe('Matcher', () => {
 
     it('alternate syntax', () => {
       const astar = fixed('a').star()
-      expect(getAllValuesFrom(astar('aaa', 0))).toEqual([{
+      expect([...astar('aaa', 0)]).toEqual([{
         j: 0,
         match: []
       }, {
@@ -300,7 +286,7 @@ xdescribe('Matcher', () => {
 
     it('does more complex', () => {
       const aorbstar = star(or([fixed('a'), fixed('b')]))
-      expect(getAllValuesFrom(aorbstar('ab', 0))).toEqual([{
+      expect([...aorbstar('ab', 0)]).toEqual([{
         j: 0,
         match: []
       }, {
@@ -314,7 +300,7 @@ xdescribe('Matcher', () => {
 
     it('alternate syntax', () => {
       const abstar = fixed('a').seq(fixed('b')).star()
-      expect(getAllValuesFrom(abstar('ab', 0))).toEqual([{
+      expect([...abstar('ab', 0)]).toEqual([{
         j: 0,
         match: []
       }, {
@@ -325,7 +311,7 @@ xdescribe('Matcher', () => {
 
     it('foop', () => {
       const astarb = fixed('a').star().seq(fixed('b'))
-      expect(getAllValuesFrom(astarb('aaab', 0))).toEqual([{
+      expect([...astarb('aaab', 0)]).toEqual([{
         j: 4,
         match: [['a', 'a', 'a'], 'b']
       }])
@@ -335,7 +321,7 @@ xdescribe('Matcher', () => {
   describe('plus', () => {
     it('huh? 3', () => {
       const astar = seq([fixed('a')])
-      expect(getAllValuesFrom(astar('aaaa', 1))).toEqual([{
+      expect([...astar('aaaa', 1)]).toEqual([{
         j: 2,
         match: ['a']
       }])
@@ -343,7 +329,7 @@ xdescribe('Matcher', () => {
 
     it('huh? 2', () => {
       const astar = seq([star(fixed('a'))])
-      expect(getAllValuesFrom(astar('aaaa', 1))).toEqual([{
+      expect([...astar('aaaa', 1)]).toEqual([{
         j: 1,
         match: [[]]
       }, {
@@ -361,7 +347,7 @@ xdescribe('Matcher', () => {
     it('huh?', () => {
       const a = fixed('a')
       const aplus = (inner => seq([inner, star(inner)]))(a)
-      expect(getAllValuesFrom(aplus('aaaa', 1))).toEqual([{
+      expect([...aplus('aaaa', 1)]).toEqual([{
         j: 2,
         match: ['a', []]
       }, {
@@ -375,7 +361,7 @@ xdescribe('Matcher', () => {
 
     it('works', () => {
       const aplus = plus(fixed('a'))
-      expect(getAllValuesFrom(aplus('aaaa', 1))).toEqual([{
+      expect([...aplus('aaaa', 1)]).toEqual([{
         j: 2,
         match: ['a']
       }, {
@@ -389,7 +375,7 @@ xdescribe('Matcher', () => {
 
     it('promotes a string to a fixed matcher', () => {
       const aplus = plus('a')
-      expect(getAllValuesFrom(aplus('aaaa', 1))).toEqual([{
+      expect([...aplus('aaaa', 1)]).toEqual([{
         j: 2,
         match: ['a']
       }, {
@@ -403,7 +389,7 @@ xdescribe('Matcher', () => {
 
     it('alternate syntax', () => {
       const aplus = fixed('a').plus()
-      expect(getAllValuesFrom(aplus('aaaa', 1))).toEqual([{
+      expect([...aplus('aaaa', 1)]).toEqual([{
         j: 2,
         match: ['a']
       }, {
@@ -418,42 +404,42 @@ xdescribe('Matcher', () => {
 
   describe('resolve', () => {
     it('works', () => {
-      const unresolved = {
-        a: matchers => fixed('a'),
-        b: matchers => matchers.a
-      }
+      const unresolved = ref => ({
+        a: fixed('a'),
+        b: ref('a')
+      })
 
       const resolved = resolve(unresolved)
 
-      expect(getAllValuesFrom(resolved.b('a', 0))).toEqual([{
+      expect([...resolved.b('a', 0)]).toEqual([{
         j: 1,
         match: 'a'
       }])
     })
 
     it('promotes a string to a fixed matcher', () => {
-      const unresolved = {
-        a: matchers => 'a',
-        b: matchers => matchers.a
-      }
+      const unresolved = ref => ({
+        a: 'a',
+        b: ref('a')
+      })
 
       const resolved = resolve(unresolved)
 
-      expect(getAllValuesFrom(resolved.b('a', 0))).toEqual([{
+      expect([...resolved.b('a', 0)]).toEqual([{
         j: 1,
         match: 'a'
       }])
     })
 
     it('works too', () => {
-      const unresolved = {
-        a: matchers => fixed('a'),
-        b: matchers => matchers.a
-      }
+      const unresolved = ref => ({
+        a: fixed('a'),
+        b: ref('a')
+      })
 
       const resolved = resolve(unresolved).b.star()
 
-      expect(getAllValuesFrom(resolved('a', 0))).toEqual([{
+      expect([...resolved('a', 0)]).toEqual([{
         j: 0,
         match: []
       }, {
@@ -463,53 +449,53 @@ xdescribe('Matcher', () => {
     })
 
     it('works on non-matcher generator thingies', () => {
-      const unresolved = {
-        a: matchers => fixed('a'),
-        b: matchers => matchers.a
-      }
+      const unresolved = ref => ({
+        a: fixed('a'),
+        b: ref('a')
+      })
 
       const resolved = resolve(unresolved)
 
-      expect(getAllValuesFrom(resolved.b('a', 0))).toEqual([{
+      expect([...resolved.b('a', 0)]).toEqual([{
         j: 1,
         match: 'a'
       }])
     })
 
     it('works too', () => {
-      const unresolved = {
-        a: matchers => (string, i) => ({ next: () => ({ done: true }) }),
-        b: matchers => matchers.a
-      }
+      const unresolved = ref => ({
+        a: (string, i) => ({ next: () => ({ done: true }) }),
+        b: ref('a')
+      })
 
       const resolvedB = resolve(unresolved).b
 
-      expect(getAllValuesFrom(resolvedB('a', 0))).toEqual([])
+      expect([...resolvedB('a', 0)]).toEqual([])
     })
 
     it('modifies', () => {
-      const unresolved = {
-        a: matchers => fixed('a').map(value => 'b'),
-        b: matchers => matchers.a
-      }
+      const unresolved = ref => ({
+        a: fixed('a').map(value => 'b'),
+        b: ref('a')
+      })
 
       const resolved = resolve(unresolved)
 
-      expect(getAllValuesFrom(resolved.b('a', 0))).toEqual([{
+      expect([...resolved.b('a', 0)]).toEqual([{
         j: 1,
         match: 'b'
       }])
     })
 
     it('modifies too', () => {
-      const unresolved = {
-        a: matchers => fixed('a'),
-        b: matchers => matchers.a.map(value => 'b')
-      }
+      const unresolved = ref => ({
+        a: fixed('a'),
+        b: ref('a').map(value => 'b')
+      })
 
       const resolved = resolve(unresolved)
 
-      expect(getAllValuesFrom(resolved.b('a', 0))).toEqual([{
+      expect([...resolved.b('a', 0)]).toEqual([{
         j: 1,
         match: 'b'
       }])
