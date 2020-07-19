@@ -11,15 +11,15 @@ npm install green-parse
 ## Example
 
 ```js
-const {fixed, or, seq} = require('green-parse')
+const { Fixed, or, seq } = require('green-parse')
 
-const matchZero = fixed("0")
+const matchZero = fixed('0')
   .map(() => 0)
 
-const matchNonZeroDigit = or("123456789".split("").map(fixed))
+const matchNonZeroDigit = or('123456789'.split('').map(fixed))
   .map(match => parseInt(match, 10))
 
-const matchDigit = or("0123456789".split("").map(fixed))
+const matchDigit = or('0123456789'.split('').map(fixed))
   .map(match => parseInt(match, 10))
 
 const matchPositiveInteger = seq([matchNonZeroDigit, matchDigit.star()])
@@ -101,35 +101,35 @@ console.log(iterator.next()) // {done: true}
 
 Having said that, `greenParse` exposes the following:
 
-### chr
+### Matcher.CHR
 
-A fixed matcher object which matches any single character from a string. Note that a JavaScript `String` object is a sequence of 16-bit code units, with Unicode characters outside the Basic Multilingual Plane encoded as a *surrogate pair* of code units. In this case, this matcher returns just a single surrogate.
+A constant `Matcher` object which matches any single character from a string. Note that a JavaScript `String` object is a sequence of 16-bit code units, with Unicode characters outside the Basic Multilingual Plane encoded as a *surrogate pair* of code units. In this case, this matcher returns just a single surrogate.
 
 ```js
-const iterator = chr('abc', 0)
+const iterator = Matcher.CHR('abc', 0)
 console.log(iterator.next()) // {value: {match: 'a', j: 1}, done: false}
 console.log(iterator.next()) // {done: true}
 ```
 
-### unicode
+### Matcher.UNICODE
 
-A fixed matcher which matches any single Unicode character from a string. In the case of characters outside the Basic Multilingual Plane, this will be a `String` of `length` `2`, not `1`. If surrogates in the string are not paired correctly, this matcher will return no matches.
+A constant `Matcher` which matches any single Unicode character from a string. In the case of characters outside the Basic Multilingual Plane, this will be a `String` of `length` `2`, not `1`. If surrogates in the string are not paired correctly, this matcher will return no matches.
 
-### fixed(str)
+### Matcher.fixed(str)
 
-Returns a matcher which matches a fixed substring in the input.
+Returns a `Matcher` which matches a fixed substring in the input.
 
 ```js
-const matchB = fixed('b')
+const matchB = Matcher.fixed('b')
 
 const iterator = matchB('abc', 1)
 console.log(iterator.next()) // {value: {match: 'b', j: 2}, done: false}
 console.log(iterator.next()) // {done: true}
 ```
 
-### or(matchers)
+### Matcher.or(matchers)
 
-Takes an array `matchers` and returns a new matcher which systematically returns all of the results from each inner matcher in turn.
+Takes an array of small-m matchers and returns a new `Matcher` which systematically returns all of the results from each inner matcher in turn.
 
 ```js
 const aorb = or([fixed('a'), fixed('b')])
@@ -143,7 +143,7 @@ console.log(iterator2.next()) // {value: {match: 'b', j: 1}, done: false}
 console.log(iterator2.next()) // {done: true}
 ```
 
-You can use plain strings instead of `fixed` matchers here:
+You can use plain strings instead of `fixed` `Matcher`s here:
 
 ```js
 const aorb = or(['a', 'b'])
@@ -274,7 +274,7 @@ console.log(iterator.next()) // {value: {match: 4, j: 6}, done: false}
 Use this to only return certain matches. `f` should be a function which accepts a match as input and returns a `Boolean` indicating whether to keep it or not.
 
 ```js
-const matchAnythingButC = unicode.filter(match => match !== 'c').star()
+const matchAnythingButC = Matcher.UNICODE.filter(match => match !== 'c').star()
 
 const iterator = matchAnythingButC('abc', 0)
 expect(iterator.next()).toEqual({value: {match: [], j: 0}, done: false})
@@ -286,7 +286,7 @@ expect(iterator.next()).toEqual({done: true})
 #### star()
 
 ```js
-const matchUnicodeString = unicode.star()
+const matchUnicodeString = Matcher.UNICODE.star()
 ```
 
 #### plus()
