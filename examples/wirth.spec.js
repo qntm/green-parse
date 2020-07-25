@@ -105,4 +105,13 @@ describe('Wirth grammar', () => {
     // But the result is quite ugly since `matcher2` doesn't know how to transform the result.
     expect(() => grammar2.SYNTAX.parse1(wirthSyntaxString)).not.toThrow()
   })
+
+  it('does groups', () => {
+    const wirthSyntaxString = `
+      thing = "a" ( "b" ) "d" .
+    `
+
+    const grammar2 = wirthGrammar.SYNTAX.parse1(wirthSyntaxString)
+    expect(grammar2.thing.parse1('abd')).toEqual(['a', [['b']], 'd'])
+  })
 })

@@ -10,7 +10,7 @@
   "main": "src/matcher/index.js",
   "scripts": {
     "standard": "standard",
-    "test": "npx jest"
+    "test": "npx jest --coverage"
   },
   "author": "qntm",
   "license": "MIT",

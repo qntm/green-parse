@@ -21,6 +21,7 @@ module.exports = resolve(ref => ({
             return seq([constructMatcher(thing.expression)])
           case 'STAR':
             return constructMatcher(thing.expression).star()
+          /* istanbul ignore next */
           default:
             // This should be impossible
             throw Error('Unrecognised type: ' + thing.type)

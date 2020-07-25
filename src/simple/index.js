@@ -48,18 +48,20 @@ const fixed = needle => function * (string, i) {
 
 const EMPTY = fixed('')
 
-const regex = regExp => function * (string, i) {
+const regex = regExp => {
   if (regExp.global) {
     throw Error('Can\'t use a global RegExp')
   }
   if (!regExp.source.startsWith('^')) {
     throw Error('RegExp must be anchored at the start of the substring')
   }
-  const result = string.substring(i).match(regExp)
-  if (result !== null) {
-    yield {
-      match: [...result],
-      j: i + result[0].length
+  return function * (string, i) {
+    const result = string.substring(i).match(regExp)
+    if (result !== null) {
+      yield {
+        match: [...result],
+        j: i + result[0].length
+      }
     }
   }
 }

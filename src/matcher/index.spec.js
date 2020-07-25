@@ -173,6 +173,15 @@ describe('Matcher', () => {
         ])
       })
 
+      it('alternate syntax', () => {
+        const aa24 = fixed('a').times(2, 4)
+        expect([...aa24.match('aaaaaaa', 1)]).toEqual([
+          { j: 3, match: ['a', 'a'] },
+          { j: 4, match: ['a', 'a', 'a'] },
+          { j: 5, match: ['a', 'a', 'a', 'a'] }
+        ])
+      })
+
       it('works with separator', () => {
         const aa11nosep = times('a', 1, 1)
         expect([...aa11nosep.match('a a a a a a a', 2)]).toEqual([
@@ -253,6 +262,17 @@ describe('Matcher', () => {
           { j: 0, match: [] },
           { j: 1, match: ['b'] },
           { j: 2, match: ['b', 'c'] }
+        ])
+      })
+
+      it('what 3', () => {
+        const matcher = UNICODE.star(/^ +/)
+        expect([...matcher.match('b   c de', 0)]).toEqual([
+          { j: 0, match: [] },
+          { j: 1, match: ['b'] },
+          { j: 5, match: ['b', 'c'] },
+          { j: 7, match: ['b', 'c', 'd'] }
+          // no "e" match
         ])
       })
     })

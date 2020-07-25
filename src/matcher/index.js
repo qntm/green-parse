@@ -14,6 +14,7 @@ const promote = inner => typeof inner === 'string' ? Matcher.fixed(inner)
   should generally not call this constructor directly.
 */
 const Matcher = inner => {
+  /* istanbul ignore next */
   if ('match' in inner) {
     throw Error('Can\'t make a Matcher from a Matcher')
   }

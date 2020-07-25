@@ -324,6 +324,15 @@ describe('simple match generator functions', () => {
   })
 
   describe('regex', () => {
+    it('disallows global regexes', () => {
+      expect(() => regex(/^a/g)).toThrowError('Can\'t use a global RegExp')
+      expect(() => regex(/a/g)).toThrowError('Can\'t use a global RegExp')
+    })
+
+    it('disallows unanchored regexes', () => {
+      expect(() => regex(/a/)).toThrowError('RegExp must be anchored at the start of the substring')
+    })
+
     it('works', () => {
       const matcher = regex(/^[0-9a-fA-F]([0-9a-fA-F])/)
       expect([...matcher('0x0134af1', 4)]).toEqual([
