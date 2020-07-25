@@ -1,4 +1,4 @@
-'use strict'
+/* eslint-env jest */
 
 const {
   NOTHING,
@@ -13,8 +13,11 @@ const {
   maybe,
   resolve,
   map,
-  filter
-} = require('../src/simple.js')
+  filter,
+  regex,
+  parser,
+  parse1
+} = require('.')
 
 describe('simple match generator functions', () => {
   describe('NOTHING', () => {
@@ -317,6 +320,39 @@ describe('simple match generator functions', () => {
         { j: 1, match: ['a'] },
         { j: 2, match: ['a', 'b'] }
       ])
+    })
+  })
+
+  describe('regex', () => {
+    it('works', () => {
+      const matcher = regex(/^[0-9a-fA-F]([0-9a-fA-F])/)
+      expect([...matcher('0x0134af1', 4)]).toEqual([
+        { j: 6, match: ['34', '4'] }
+      ])
+    })
+  })
+
+  describe('parser', () => {
+    it('works', () => {
+      const p = parser(star(or(['a', 'aa'])))
+      expect([...p('aaaa')]).toEqual([
+        ['a', 'a', 'a', 'a'],
+        ['a', 'a', 'aa'],
+        ['a', 'aa', 'a'],
+        ['aa', 'a', 'a'],
+        ['aa', 'aa']
+      ])
+    })
+  })
+
+  describe('parse1', () => {
+    it('works', () => {
+      const p = parse1(star(fixed('a')))
+      expect(p('aaa')).toEqual(['a', 'a', 'a'])
+      expect(p('a')).toEqual(['a'])
+      expect(p('')).toEqual([])
+      expect(() => p('aaab')).toThrowError('Expected 1 result, got 0')
+      expect(() => p('b')).toThrowError('Expected 1 result, got 0')
     })
   })
 })

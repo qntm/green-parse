@@ -3,9 +3,9 @@
 // Functions operating on existing simple match generator functions are all
 // capable of promoting a single string to a simple match generator function.
 
-const NOTHING = function* (string, i) {}
+const NOTHING = function * (string, i) {}
 
-const CHR = function* (string, i) {
+const CHR = function * (string, i) {
   if (i < string.length) {
     yield {
       j: i + 1,
@@ -14,13 +14,13 @@ const CHR = function* (string, i) {
   }
 }
 
-const UNICODE = function* (string, i) {
+const UNICODE = function * (string, i) {
   if (i < string.length) {
     const first = string.charAt(i)
-    if ('\uD800' <= first && first <= '\uDBFF') {
+    if (first >= '\uD800' && first <= '\uDBFF') {
       if (i + 1 < string.length) {
         const second = string.charAt(i + 1)
-        if ('\uDC00' <= second && second < '\uDFFF') {
+        if (second >= '\uDC00' && second < '\uDFFF') {
           yield {
             j: i + 1 + 1,
             match: first + second
@@ -37,7 +37,7 @@ const UNICODE = function* (string, i) {
   }
 }
 
-const fixed = needle => function* (string, i) {
+const fixed = needle => function * (string, i) {
   if (string.substr(i, needle.length) === needle) {
     yield {
       j: i + needle.length,
@@ -48,10 +48,27 @@ const fixed = needle => function* (string, i) {
 
 const EMPTY = fixed('')
 
+const regex = regExp => function * (string, i) {
+  if (regExp.global) {
+    throw Error('Can\'t use a global RegExp')
+  }
+  if (!regExp.source.startsWith('^')) {
+    throw Error('RegExp must be anchored at the start of the substring')
+  }
+  const result = string.substring(i).match(regExp)
+  if (result !== null) {
+    yield {
+      match: [...result],
+      j: i + result[0].length
+    }
+  }
+}
+
 // If `inner` is a string, promote it to a `fixed` simple match generator for
-// that string.
-const promote = inner =>
-  typeof inner === 'string' ? fixed(inner) : inner
+// that string. If it's a regular expression object, promote it to a `regex`.
+const promote = inner => typeof inner === 'string' ? fixed(inner)
+  : Object.prototype.toString.call(inner) === '[object RegExp]' ? regex(inner)
+    : inner
 
 /**
   Returns all the results from the first matcher and then all the results from
@@ -59,20 +76,17 @@ const promote = inner =>
 */
 const or = inners => {
   inners = inners.map(promote)
-  return function* (string, i) {
+  return function * (string, i) {
     for (const inner of inners) {
-      yield* inner(string, i)
+      yield * inner(string, i)
     }
   }
 }
 
 const seq = (inners, separator) => {
-  if (separator !== undefined && inners.length < 1) {
-    throw Error('Not well-defined less than 1 inner')
-  }
-  separator = separator === undefined ? EMPTY : promote(separator)
   inners = inners.map(promote)
-  const recurse = function* (string, i, matches) {
+  separator = separator === undefined ? EMPTY : promote(separator)
+  const recurse = function * (string, i, matches) {
     const depth = matches.length
     if (depth in inners) {
       const sep = matches.length === 0 ? EMPTY : separator // no leading separator
@@ -80,7 +94,7 @@ const seq = (inners, separator) => {
       for (const sepresult of sep(string, i)) {
         // Ignore sepresult.match
         for (const result of inner(string, sepresult.j)) {
-          yield* recurse(string, result.j, [...matches, result.match])
+          yield * recurse(string, result.j, [...matches, result.match])
         }
       }
     } else {
@@ -90,22 +104,16 @@ const seq = (inners, separator) => {
       }
     }
   }
-  return function* (string, i) {
-    yield* recurse(string, i, [])
+  return function * (string, i) {
+    yield * recurse(string, i, [])
   }
 }
 
+// `min` and `max` are inclusive
 const times = (inner, min, max, separator) => {
-  // `min` and `max` are inclusive
-  if (separator !== undefined && min < 1) {
-    throw Error('Not well-defined for less than 1 copy')
-  }
-  if (!inner) {
-    throw Error('huh')
-  }
   inner = promote(inner)
   separator = separator === undefined ? EMPTY : promote(separator)
-  const recurse = function* (string, i, matches) {
+  const recurse = function * (string, i, matches) {
     if (min <= matches.length) {
       yield {
         match: matches,
@@ -117,27 +125,27 @@ const times = (inner, min, max, separator) => {
       for (const sepresult of sep(string, i)) {
         // Ignore sepresult.match
         for (const result of inner(string, sepresult.j)) {
-          yield* recurse(string, result.j, [...matches, result.match])
+          yield * recurse(string, result.j, [...matches, result.match])
         }
       }
     }
   }
-  return function* (string, i) {
-    yield* recurse(string, i, [])
+  return function * (string, i) {
+    yield * recurse(string, i, [])
   }
 }
 
-const star = inner =>
-  times(inner, 0, Infinity)
+const star = (inner, separator) =>
+  times(inner, 0, Infinity, separator)
 
 const plus = (inner, separator) =>
   times(inner, 1, Infinity, separator)
 
 const maybe = inner => {
   inner = promote(inner)
-  return function* (string, i) {
-    yield* EMPTY(string, i)
-    yield* inner(string, i)
+  return function * (string, i) {
+    yield * EMPTY(string, i)
+    yield * inner(string, i)
   }
 }
 
@@ -158,7 +166,7 @@ const resolve = open => {
 
 const map = (inner, f) => {
   inner = promote(inner)
-  return function* (string, i) {
+  return function * (string, i) {
     for (const value of inner(string, i)) {
       yield {
         match: f(value.match),
@@ -170,7 +178,7 @@ const map = (inner, f) => {
 
 const filter = (inner, f) => {
   inner = promote(inner)
-  return function* (string, i) {
+  return function * (string, i) {
     for (const value of inner(string, i)) {
       if (f(value.match)) {
         yield value
@@ -179,13 +187,21 @@ const filter = (inner, f) => {
   }
 }
 
-const regex = regExp => function* (string, i) {
-  const result = regExp.match(string.substring(i))
-  if (result !== null) {
-    yield {
-      match: [...result],
-      j: i + result[0].length
+const parser = inner => function * (string) {
+  for (const value of inner(string, 0)) {
+    if (value.j === string.length) {
+      yield value.match
     }
+  }
+}
+
+const parse1 = inner => {
+  const p = parser(inner)
+  return string => {
+    for (const parse of p(string)) {
+      return parse
+    }
+    throw Error('Expected 1 result, got 0')
   }
 }
 
@@ -203,5 +219,8 @@ module.exports = {
   maybe,
   resolve,
   map,
-  filter
+  filter,
+  regex,
+  parser,
+  parse1
 }

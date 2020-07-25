@@ -7,7 +7,7 @@
     "type": "git",
     "url": "git://github.com/qntm/green-parse.git"
   },
-  "main": "src/main.js",
+  "main": "src/matcher/index.js",
   "scripts": {
     "standard": "standard",
     "test": "npx jest"

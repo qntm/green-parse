@@ -1,9 +1,16 @@
-const { resolve, seq, or, UNICODE, regex, resolve } = require('green-parse')
+const {
+  seq,
+  or,
+  UNICODE,
+  resolve,
+  map,
+  star,
+  filter
+} = require('../src/simple')
 
-// This object parses JSON strings.
 module.exports = resolve(ref => ({
-  topValue: map(
-    seq([ref('ws'), ref('value'), ref('ws')])
+  topvalue: map(
+    seq([ref('ws'), ref('value'), ref('ws')]),
     ([space1, value, space2]) => value
   ),
 
@@ -12,52 +19,39 @@ module.exports = resolve(ref => ({
     ref('array'),
     ref('string'),
     ref('number'),
-    map('true', () => true),
-    map('false', () => false),
-    map('null', () => null)
+    ref('true'),
+    ref('false'),
+    ref('null')
   ]),
 
-  object: or([
-    ref('fullobject'),
-    ref('emptyobject')
-  ]),
-
-  fullobject: map(
-    seq(['{', ref('keyvalues'), '}'], ref('ws')),
-    ([open, keyvalues, close]) => Object.fromEntries(keyValues)
+  object: map(
+    seq(['{', ref('ws'), ref('keyvalues'), '}']),
+    ([open, space1, keyvalues, close]) => Object.fromEntries(keyvalues)
   ),
 
-  keyvalues: plus(
+  keyvalues: star(
     ref('keyvalue'),
-    seq([ref('ws'), ',', ref('ws')])
+    seq([',', ref('ws')])
   ),
 
   keyvalue: map(
-    seq([ref('string'), ':', ref('value')], ref('ws')),
-    ([key, colon, value]) => [key, value]
+    seq([ref('string'), ref('ws'), ':', ref('ws'), ref('value'), ref('ws')]),
+    ([key, space1, colon, space2, value, space3]) => [key, value]
   ),
 
-  emptyobject: map(
-    seq(['{', '}'], ref('ws')),
-    () => ({})
+  array: map(
+    seq(['[', ref('ws'), ref('arrayvalues'), ']']),
+    ([open, space1, values, close]) => values
   ),
 
-  array: or([
-    ref('fullarray'),
-    ref('emptyarray')
-  ]),
-
-  fullarray: map(
-    seq(['[', plus(
-      ref('value'),
-      seq([ref('ws'), ',', ref('ws')])
-    ), ']'], ref('ws')),
-    ([open, values, close]) => values
+  arrayvalues: star(
+    ref('arrayvalue'),
+    seq([',', ref('ws')])
   ),
 
-  emptyarray: map(
-    seq(['[', ']'], ref('ws')),
-    () => []
+  arrayvalue: map(
+    seq([ref('value'), ref('ws')]),
+    ([value, space]) => value
   ),
 
   string: map(
@@ -80,15 +74,21 @@ module.exports = resolve(ref => ({
     map('\\r', () => '\r'),
     map('\\t', () => '\t'),
     map(
-      regex(/^\\u([0-9a-fA-F]{4})/),
+      /^\\u([0-9a-fA-F]{4})/,
       result => String.fromCharCode(Number.parseInt(result[1], 0x10))
     )
   ]),
 
   number: map(
-    regex(/^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][-+]?[0-9]+)/),
+    /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?/,
     result => Number.parseFloat(result[0])
   ),
 
-  ws: star(or([' ', '\n', '\r', '\t']))
-})).topValue
+  true: map('true', () => true),
+
+  false: map('false', () => false),
+
+  null: map('null', () => null),
+
+  ws: /^[ \n\r\t]*/
+}))
