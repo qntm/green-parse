@@ -28,14 +28,12 @@ const matchPositiveInteger = seq([matchNonZeroDigit, matchDigits])
   .map(([nonZeroDigit, digits]) => digits.reduce((acc, digit) => acc * 10 + digit, nonZeroDigit))
 
 for (const value of matchPositiveInteger.match('923510', 2)) {
-  console.log(value)
-}
-
-// this logs four values:
+// this loop body is executed four times, with the following `value`s:
 // { j: 3, match: 3 }
 // { j: 4, match: 35 }
 // { j: 5, match: 351 }
 // { j: 6, match: 3510 }
+}
 ```
 
 ## API
@@ -101,10 +99,8 @@ const { regex } = require('green-parse')
 const numberMatcher = regex(/^[1-9][0-9]*/)
 
 for (const value of numberMatcher.match('07734', 2)) {
-  // this loop body is executed three times with the following `value`s:
-  // { j: 3, match: ['7'] }
-  // { j: 4, match: ['73'] }
-  // { j: 5, match: ['734'] }
+  // this loop body is executed once
+  // `value` is { j: 5, match: ['734'] }
 }
 ```
 
@@ -138,7 +134,7 @@ Equivalent to `or(['', inner])`.
 
 Match a sequence of `min` to `max` inclusive copies of `inner` in a row. Proceeds depth-first. Results are arrays of inner matches. If `separator` is included, it is matched between each inner match, but the separator match is ignored.
 
-If `inner` or `separator` is a string, it is promoted to a `fixed` matcher. If `inner` or `separator`, it is promoted to a `regex` matcher.
+If `inner` or `separator` is a string, it is promoted to a `fixed` matcher. If `inner` or `separator` is a `RegExp` object, it is promoted to a `regex` matcher.
 
 ```js
 const { times } = require('green-parse')
@@ -241,7 +237,7 @@ for (const value of matchers.term.match('[(A)]', 0)) {
 
 This can be used to develop context-free grammars. This is a recursive descent parser, which means left-recursion is unsupported.
 
-The values in the object returned by `open` should all be matchers. If they are strings, they are promoted to `fixed` matchers. If they are regular expressions, they are promoted to `regexp` matchers.
+The values in the object returned by `open` should all be matchers. If they are strings, they are promoted to `fixed` matchers. If they are regular expressions, they are promoted to `regex` matchers.
 
 ### Matcher object methods
 
