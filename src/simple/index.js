@@ -20,7 +20,7 @@ const UNICODE = function * (string, i) {
     if (first >= '\uD800' && first <= '\uDBFF') {
       if (i + 1 < string.length) {
         const second = string.charAt(i + 1)
-        if (second >= '\uDC00' && second < '\uDFFF') {
+        if (second >= '\uDC00' && second <= '\uDFFF') {
           yield {
             j: i + 1 + 1,
             match: first + second
