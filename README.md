@@ -28,11 +28,11 @@ const matchPositiveInteger = seq([matchNonZeroDigit, matchDigits])
   .map(([nonZeroDigit, digits]) => digits.reduce((acc, digit) => acc * 10 + digit, nonZeroDigit))
 
 for (const value of matchPositiveInteger.match('923510', 2)) {
-// this loop body is executed four times, with the following `value`s:
-// { j: 3, match: 3 }
-// { j: 4, match: 35 }
-// { j: 5, match: 351 }
-// { j: 6, match: 3510 }
+  // this loop body is executed four times, with the following `value`s:
+  // { j: 3, match: 3 }
+  // { j: 4, match: 35 }
+  // { j: 5, match: 351 }
+  // { j: 6, match: 3510 }
 }
 ```
 
@@ -277,7 +277,7 @@ const { plus, CHR } = require('green-parse')
 
 const polyMatcher = plus(plus(CHR))
 
-for (const value of polyMatcher.parse('abc', 0)) {
+for (const value of polyMatcher.parse('abc')) {
   // this loop body is executed four times, with the following `value`s:
   // [['a'], ['b'], ['c']]
   // [['a'], ['b', 'c']]
