@@ -295,7 +295,7 @@ const { plus, CHR } = require('green-parse')
 
 const polyMatcher = plus(plus(CHR))
 
-const value = polyMatcher.parse1('abc', 0)
+const value = polyMatcher.parse1('abc')
 // `value` is [['a'], ['b'], ['c']]
 ```
 
