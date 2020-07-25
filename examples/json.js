@@ -1,117 +1,94 @@
-const { MonoParser, resolve, seq, fixed, or, unicode, wseq } = require('green-parse')
+const {
+  seq,
+  or,
+  UNICODE,
+  resolve,
+  map,
+  star,
+  filter
+} = require('../src/simple')
 
-// This object parses JSON strings.
-module.exports = MonoParser(resolve({
-  topValue: matchers => seq([matchers.WHITESPACE, matchers.value, matchers.WHITESPACE])
-    .map(([space1, object, space2]) => object),
+module.exports = resolve(ref => ({
+  topvalue: map(
+    seq([ref('ws'), ref('value'), ref('ws')]),
+    ([space1, value, space2]) => value
+  ),
 
-  object: matchers => or([
-    matchers.fullobject,
-    matchers.emptyobject
+  value: or([
+    ref('object'),
+    ref('array'),
+    ref('string'),
+    ref('number'),
+    ref('true'),
+    ref('false'),
+    ref('null')
   ]),
 
-  emptyobject: matchers => wseq([
-    fixed('{'),
-    fixed('}')
-  ], matchers.WHITESPACE)
-    .map(() => ({})),
+  object: map(
+    seq(['{', ref('ws'), ref('keyvalues'), '}']),
+    ([open, space1, keyvalues, close]) => Object.fromEntries(keyvalues)
+  ),
 
-  fullobject: matchers => wseq([
-    fixed('{'),
-    matchers.keyvalue.wplus(seq([matchers.WHITESPACE, fixed(','), matchers.WHITESPACE])),
-    fixed('}')
-  ], matchers.WHITESPACE)
-    .map(([open, keyvalues, close]) => {
-      const obj = {}
-      keyvalues.forEach(({ key, value }) => {
-        obj[key] = value
-      })
-      return obj
-    }),
+  keyvalues: star(
+    ref('keyvalue'),
+    seq([',', ref('ws')])
+  ),
 
-  keyvalue: matchers => wseq([matchers.string, fixed(':'), matchers.value], matchers.WHITESPACE)
-    .map(([key, colon, value]) => ({ key, value })),
+  keyvalue: map(
+    seq([ref('string'), ref('ws'), ':', ref('ws'), ref('value'), ref('ws')]),
+    ([key, space1, colon, space2, value, space3]) => [key, value]
+  ),
 
-  array: matchers => or([
-    matchers.fullarray,
-    matchers.emptyarray
-  ]),
+  array: map(
+    seq(['[', ref('ws'), ref('arrayvalues'), ']']),
+    ([open, space1, values, close]) => values
+  ),
 
-  emptyarray: matchers => wseq([
-    fixed('['),
-    fixed(']')
-  ], matchers.WHITESPACE)
-    .map(() => []),
+  arrayvalues: star(
+    ref('arrayvalue'),
+    seq([',', ref('ws')])
+  ),
 
-  fullarray: matchers => wseq([
-    fixed('['),
-    matchers.value.wplus(seq([matchers.WHITESPACE, fixed(','), matchers.WHITESPACE])),
-    fixed(']')
-  ], matchers.WHITESPACE)
-    .map(([open, array, closed]) => array),
+  arrayvalue: map(
+    seq([ref('value'), ref('ws')]),
+    ([value, space]) => value
+  ),
 
-  value: matchers => or([
-    matchers.object,
-    matchers.array,
-    matchers.string,
-    matchers.number,
-    fixed('true').map(() => true),
-    fixed('false').map(() => false),
-    fixed('null').map(() => null)
-  ]),
+  string: map(
+    seq(['"', star(ref('char')), '"']),
+    ([open, chars, close]) => chars.join('')
+  ),
 
-  string: matchers => seq([
-    fixed('"'),
-    matchers.char.star().map(chars => chars.join('')),
-    fixed('"')
-  ])
-    .map(([open, string, close]) => string),
-
-  char: matchers => or([
-    unicode.filter(match =>
+  char: or([
+    filter(UNICODE, match =>
       match !== '"' &&
       match !== '\\' &&
       match.charCodeAt(0) > 0x1F // U+007F DEL is not considered a control character!
     ),
-    fixed('\\"').map(() => '"'),
-    fixed('\\\\').map(() => '\\'),
-    fixed('\\/').map(() => '/'),
-    fixed('\\b').map(() => '\x08'),
-    fixed('\\f').map(() => '\f'),
-    fixed('\\n').map(() => '\n'),
-    fixed('\\r').map(() => '\r'),
-    fixed('\\t').map(() => '\t'),
-    seq([
-      fixed('\\u'),
-      or('0123456789abcdefABCDEF'.split('').map(fixed)),
-      or('0123456789abcdefABCDEF'.split('').map(fixed)),
-      or('0123456789abcdefABCDEF'.split('').map(fixed)),
-      or('0123456789abcdefABCDEF'.split('').map(fixed))
-    ])
-      .map(([u, digit1, digit2, digit3, digit4]) =>
-        String.fromCharCode(Number.parseInt(digit1 + digit2 + digit3 + digit4, 0x10))
-      )
+    map('\\"', () => '"'),
+    map('\\\\', () => '\\'),
+    map('\\/', () => '/'),
+    map('\\b', () => '\x08'),
+    map('\\f', () => '\f'),
+    map('\\n', () => '\n'),
+    map('\\r', () => '\r'),
+    map('\\t', () => '\t'),
+    map(
+      /^\\u([0-9a-fA-F]{4})/,
+      result => String.fromCharCode(Number.parseInt(result[1], 0x10))
+    )
   ]),
 
-  WHITESPACE: matchers => or([fixed(' '), fixed('\n'), fixed('\r'), fixed('\t')]).star(),
+  number: map(
+    /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?/,
+    result => Number.parseFloat(result[0])
+  ),
 
-  number: matchers => seq([
-    fixed('-').maybe(),
-    or([
-      fixed('0'),
-      seq([
-        or('123456789'.split('').map(fixed)),
-        or('0123456789'.split('').map(fixed)).star().map(digits => digits.join(''))
-      ]).map(([nonzerodigit, digits]) => nonzerodigit + digits)
-    ]),
-    seq([
-      fixed('.'),
-      or('0123456789'.split('').map(fixed)).plus().map(digits => digits.join(''))
-    ]).map(([dot, digits]) => dot + digits).maybe(),
-    seq([
-      or([fixed('e'), fixed('E')]),
-      or([fixed('-'), fixed('+'), fixed('')]),
-      or('0123456789'.split('').map(fixed)).plus().map(digits => digits.join(''))
-    ]).map(([exponent, sign, digits]) => exponent + sign + digits).maybe()
-  ]).map(([sign, integer, decimal, exponent]) => Number.parseFloat(sign + integer + decimal + exponent))
-}).topValue)
+  true: map('true', () => true),
+
+  false: map('false', () => false),
+
+  null: map('null', () => null),
+
+  ws: /^[ \n\r\t]*/
+}))
