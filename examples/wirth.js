@@ -29,18 +29,17 @@ module.exports = resolve(ref => ({
       }
 
       return Object.fromEntries(
-        productions.productions.map(production => [
+        productions.map(production => [
           production.identifier.identifier,
           constructMatcher(production.expression)
         ])
       )
     })),
 
-  PRODUCTIONS: ref('PRODUCTION').plus(ref('s'))
-    .map(productions => ({ type: 'PRODUCTIONS', productions })),
+  PRODUCTIONS: ref('PRODUCTION').plus(ref('s')),
 
   PRODUCTION: seq([ref('IDENTIFIER'), '=', ref('EXPRESSION'), '.'], ref('s'))
-    .map(([identifier, equals, expression, dot]) => ({ type: 'PRODUCTION', identifier, expression })),
+    .map(([identifier, equals, expression, dot]) => ({ identifier, expression })),
 
   EXPRESSION: ref('TERM').plus(seq([ref('s'), '|', ref('s')]))
     .map(terms => ({ type: 'EXPRESSION', terms })),

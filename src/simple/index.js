@@ -59,8 +59,8 @@ const regex = regExp => {
     const result = string.substring(i).match(regExp)
     if (result !== null) {
       yield {
-        match: [...result],
-        j: i + result[0].length
+        j: i + result[0].length,
+        match: [...result]
       }
     }
   }
@@ -101,8 +101,8 @@ const seq = (inners, separator) => {
       }
     } else {
       yield {
-        match: matches,
-        j: i
+        j: i,
+        match: matches
       }
     }
   }
@@ -118,8 +118,8 @@ const times = (inner, min, max, separator) => {
   const recurse = function * (string, i, matches) {
     if (min <= matches.length) {
       yield {
-        match: matches,
-        j: i
+        j: i,
+        match: matches
       }
     }
     if (matches.length < max) {
@@ -171,8 +171,8 @@ const map = (inner, f) => {
   return function * (string, i) {
     for (const value of inner(string, i)) {
       yield {
-        match: f(value.match),
-        j: value.j
+        j: value.j,
+        match: f(value.match)
       }
     }
   }
@@ -189,19 +189,25 @@ const filter = (inner, f) => {
   }
 }
 
-const parser = inner => function * (string) {
-  for (const value of inner(string, 0)) {
-    if (value.j === string.length) {
-      yield value.match
+const parser = inner => {
+  inner = promote(inner)
+  return function * (string) {
+    for (const value of inner(string, 0)) {
+      if (value.j === string.length) {
+        yield value.match
+      }
     }
   }
 }
 
 const parse1 = inner => {
-  const p = parser(inner)
+  inner = promote(inner)
   return string => {
-    for (const parse of p(string)) {
-      return parse
+    for (const value of inner(string, 0)) {
+      if (value.j !== string.length) {
+        continue
+      }
+      return value.match
     }
     throw Error('Expected 1 result, got 0')
   }

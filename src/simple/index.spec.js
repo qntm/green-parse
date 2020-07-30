@@ -352,6 +352,13 @@ describe('simple match generator functions', () => {
         ['aa', 'aa']
       ])
     })
+
+    it('promotes', () => {
+      const p = parser(/^a+/)
+      expect([...p('aaaa')]).toEqual([
+        ['aaaa']
+      ])
+    })
   })
 
   describe('parse1', () => {
@@ -362,6 +369,14 @@ describe('simple match generator functions', () => {
       expect(p('')).toEqual([])
       expect(() => p('aaab')).toThrowError('Expected 1 result, got 0')
       expect(() => p('b')).toThrowError('Expected 1 result, got 0')
+    })
+
+    it('promotes', () => {
+      const p = parse1(/^(ab)+/)
+      expect(p('ababab')).toEqual([
+        'ababab',
+        'ab'
+      ])
     })
   })
 })
