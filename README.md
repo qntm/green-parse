@@ -143,9 +143,9 @@ const multiMatcher = times('a', 2, 4)
 
 for (const value of multiMatcher.match('aaaaaaaaaaaaa', 2)) {
   // this loop body is executed three times with the following `value`s:
-  // { j: 3, match: ['a'] }
-  // { j: 4, match: ['a', 'a'] }
-  // { j: 5, match: ['a', 'a', 'a'] }
+  // { j: 3, match: ['a', 'a'] }
+  // { j: 4, match: ['a', 'a', 'a'] }
+  // { j: 5, match: ['a', 'a', 'a', 'a'] }
 }
 ```
 
