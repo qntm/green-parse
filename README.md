@@ -96,11 +96,11 @@ Returns a matcher which matches this regular expression *at the specified locati
 ```js
 const { regex } = require('green-parse')
 
-const numberMatcher = regex(/^[1-9][0-9]*/)
+const numberMatcher = regex(/^([1-9])([0-9]*)/)
 
 for (const value of numberMatcher.match('07734', 2)) {
   // this loop body is executed once
-  // `value` is { j: 5, match: ['734'] }
+  // `value` is { j: 5, match: ['734', '7', '34'] }
 }
 ```
 
