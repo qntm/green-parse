@@ -193,14 +193,14 @@ describe('Matcher', () => {
           { j: 3, match: ['a'] }
         ])
 
-        const aa12 = times('a', 1, 2, ' ')
-        expect([...aa12.match('a a a a a a a', 2)]).toEqual([
-          { j: 3, match: ['a'] },
+        const aa22 = times('a', 2, 2, ' ')
+        expect([...aa22.match('a a a a a a a', 2)]).toEqual([
           { j: 5, match: ['a', 'a'] }
         ])
 
-        const aa22 = times('a', 2, 2, ' ')
-        expect([...aa22.match('a a a a a a a', 2)]).toEqual([
+        const aa12 = times('a', 1, 2, ' ')
+        expect([...aa12.match('a a a a a a a', 2)]).toEqual([
+          { j: 3, match: ['a'] },
           { j: 5, match: ['a', 'a'] }
         ])
 

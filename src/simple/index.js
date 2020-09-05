@@ -97,14 +97,14 @@ const seq = (inners, separator = EMPTY) => {
   return function * (string, i) {
     const stack = []
     while (true) {
+      const j = stack.length === 0 ? i : stack[stack.length - 1].value.j
       if (stack.length === inners.length) {
         yield {
-          j: stack.length === 0 ? i : stack[stack.length - 1].value.j,
+          j,
           match: stack.map(frame => frame.value.match)
         }
       }
       if (stack.length < inners.length) {
-        const j = stack.length === 0 ? i : stack[stack.length - 1].value.j
         const inner = inners[stack.length]
         const iterator = inner(string, j)
         stack.push({ iterator })
@@ -138,14 +138,14 @@ const times = (inner, min, max, separator = EMPTY) => {
   return function * (string, i) {
     const stack = []
     while (true) {
+      const j = stack.length === 0 ? i : stack[stack.length - 1].value.j
       if (min <= stack.length && stack.length <= max) {
         yield {
-          j: stack.length === 0 ? i : stack[stack.length - 1].value.j,
+          j,
           match: stack.map(frame => frame.value.match)
         }
       }
       if (stack.length < max) {
-        const j = stack.length === 0 ? i : stack[stack.length - 1].value.j
         const inner = stack.length === 0 ? firstInner : nonFirstInner
         const iterator = inner(string, j)
         stack.push({ iterator })
