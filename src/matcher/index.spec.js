@@ -193,14 +193,14 @@ describe('Matcher', () => {
           { j: 3, match: ['a'] }
         ])
 
-        const aa22 = times('a', 2, 2, ' ')
-        expect([...aa22.match('a a a a a a a', 2)]).toEqual([
-          { j: 5, match: ['a', 'a'] }
-        ])
-
         const aa12 = times('a', 1, 2, ' ')
         expect([...aa12.match('a a a a a a a', 2)]).toEqual([
           { j: 3, match: ['a'] },
+          { j: 5, match: ['a', 'a'] }
+        ])
+
+        const aa22 = times('a', 2, 2, ' ')
+        expect([...aa22.match('a a a a a a a', 2)]).toEqual([
           { j: 5, match: ['a', 'a'] }
         ])
 
@@ -262,6 +262,28 @@ describe('Matcher', () => {
           { j: 0, match: [] },
           { j: 1, match: ['b'] },
           { j: 2, match: ['b', 'c'] }
+        ])
+      })
+
+      it('what 2B', () => {
+        const matcher = UNICODE.star(' ')
+        expect([...matcher.match('b c de', 0)]).toEqual([
+          { j: 0, match: [] },
+          { j: 1, match: ['b'] },
+          { j: 3, match: ['b', 'c'] },
+          { j: 5, match: ['b', 'c', 'd'] }
+          // no "e" match
+        ])
+      })
+
+      it('what 2C', () => {
+        const matcher = UNICODE.star(/^ /)
+        expect([...matcher.match('b c de', 0)]).toEqual([
+          { j: 0, match: [] },
+          { j: 1, match: ['b'] },
+          { j: 3, match: ['b', 'c'] },
+          { j: 5, match: ['b', 'c', 'd'] }
+          // no "e" match
         ])
       })
 

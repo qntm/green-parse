@@ -85,55 +85,83 @@ const or = inners => {
   }
 }
 
-const seq = (inners, separator) => {
+const seq = (inners, separator = EMPTY) => {
   inners = inners.map(promote)
-  separator = separator === undefined ? EMPTY : promote(separator)
-  const recurse = function * (string, i, matches) {
-    const depth = matches.length
-    if (depth in inners) {
-      const sep = matches.length === 0 ? EMPTY : separator // no leading separator
-      const inner = inners[depth]
-      for (const sepresult of sep(string, i)) {
-        // Ignore sepresult.match
-        for (const result of inner(string, sepresult.j)) {
-          yield * recurse(string, result.j, [...matches, result.match])
+  separator = promote(separator)
+  inners = inners.map((inner, i) => i === 0 ? inner : function * (string, i) {
+    for (const separatorValue of separator(string, i)) {
+      yield * inner(string, separatorValue.j)
+    }
+  })
+
+  return function * (string, i) {
+    const stack = []
+    while (true) {
+      if (stack.length === inners.length) {
+        yield {
+          j: stack.length === 0 ? i : stack[stack.length - 1].value.j,
+          match: stack.map(frame => frame.value.match)
         }
       }
-    } else {
-      yield {
-        j: i,
-        match: matches
+      if (stack.length < inners.length) {
+        const j = stack.length === 0 ? i : stack[stack.length - 1].value.j
+        const inner = inners[stack.length]
+        const iterator = inner(string, j)
+        stack.push({ iterator })
+      }
+      while (true) {
+        if (stack.length === 0) {
+          return
+        }
+        const { done, value } = stack[stack.length - 1].iterator.next()
+        if (!done) {
+          stack[stack.length - 1].value = value
+          break
+        }
+        stack.pop()
       }
     }
-  }
-  return function * (string, i) {
-    yield * recurse(string, i, [])
   }
 }
 
 // `min` and `max` are inclusive
-const times = (inner, min, max, separator) => {
+const times = (inner, min, max, separator = EMPTY) => {
   inner = promote(inner)
-  separator = separator === undefined ? EMPTY : promote(separator)
-  const recurse = function * (string, i, matches) {
-    if (min <= matches.length) {
-      yield {
-        j: i,
-        match: matches
-      }
-    }
-    if (matches.length < max) {
-      const sep = matches.length === 0 ? EMPTY : separator // no leading separator
-      for (const sepresult of sep(string, i)) {
-        // Ignore sepresult.match
-        for (const result of inner(string, sepresult.j)) {
-          yield * recurse(string, result.j, [...matches, result.match])
-        }
-      }
+  separator = promote(separator)
+  const firstInner = inner
+  const nonFirstInner = function * (string, i) {
+    for (const separatorValue of separator(string, i)) {
+      yield * firstInner(string, separatorValue.j)
     }
   }
+
   return function * (string, i) {
-    yield * recurse(string, i, [])
+    const stack = []
+    while (true) {
+      if (min <= stack.length && stack.length <= max) {
+        yield {
+          j: stack.length === 0 ? i : stack[stack.length - 1].value.j,
+          match: stack.map(frame => frame.value.match)
+        }
+      }
+      if (stack.length < max) {
+        const j = stack.length === 0 ? i : stack[stack.length - 1].value.j
+        const inner = stack.length === 0 ? firstInner : nonFirstInner
+        const iterator = inner(string, j)
+        stack.push({ iterator })
+      }
+      while (true) {
+        if (stack.length === 0) {
+          return
+        }
+        const { done, value } = stack[stack.length - 1].iterator.next()
+        if (!done) {
+          stack[stack.length - 1].value = value
+          break
+        }
+        stack.pop()
+      }
+    }
   }
 }
 
