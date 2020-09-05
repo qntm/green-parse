@@ -8,6 +8,7 @@ const {
   fixed,
   or,
   seq,
+  times,
   star,
   plus,
   maybe,
@@ -135,6 +136,14 @@ describe('simple match generator functions', () => {
       expect([...matcher('abc', 0)]).toEqual([{ j: 3, match: ['a', 'b', 'c'] }])
       expect([...matcher('a b c', 0)]).toEqual([{ j: 5, match: ['a', 'b', 'c'] }])
       expect([...matcher('a                 b  c', 0)]).toEqual([{ j: 22, match: ['a', 'b', 'c'] }])
+    })
+
+    it('wseq promotes the separator', () => {
+      const matcher = seq(
+        ['a', 'b', 'c'],
+        ' '
+      )
+      expect([...matcher('a b c', 0)]).toEqual([{ j: 5, match: ['a', 'b', 'c'] }])
     })
 
     it('wseq also works', () => {
@@ -280,6 +289,18 @@ describe('simple match generator functions', () => {
         b: map(ref('a'), value => 'b')
       })).b
       expect([...matcher('a', 0)]).toEqual([{ j: 1, match: 'b' }])
+    })
+  })
+
+  describe('times', () => {
+    it('works with max 0', () => {
+      const matcher = times('a', 0, 0)
+      expect([...matcher('aaaaa', 1)]).toEqual([{ j: 1, match: [] }])
+    })
+
+    it('works with max 0 and a separator', () => {
+      const matcher = times('a', 0, 0, ' ')
+      expect([...matcher('a a a a a', 2)]).toEqual([{ j: 2, match: [] }])
     })
   })
 

@@ -265,6 +265,28 @@ describe('Matcher', () => {
         ])
       })
 
+      it('what 2B', () => {
+        const matcher = UNICODE.star(' ')
+        expect([...matcher.match('b c de', 0)]).toEqual([
+          { j: 0, match: [] },
+          { j: 1, match: ['b'] },
+          { j: 3, match: ['b', 'c'] },
+          { j: 5, match: ['b', 'c', 'd'] }
+          // no "e" match
+        ])
+      })
+
+      it('what 2C', () => {
+        const matcher = UNICODE.star(/^ /)
+        expect([...matcher.match('b c de', 0)]).toEqual([
+          { j: 0, match: [] },
+          { j: 1, match: ['b'] },
+          { j: 3, match: ['b', 'c'] },
+          { j: 5, match: ['b', 'c', 'd'] }
+          // no "e" match
+        ])
+      })
+
       it('what 3', () => {
         const matcher = UNICODE.star(/^ +/)
         expect([...matcher.match('b   c de', 0)]).toEqual([
