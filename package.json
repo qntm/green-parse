@@ -20,6 +20,6 @@
   "license": "MIT",
   "devDependencies": {
     "jest": "^26.1.0",
-    "standard": "^13.1.0"
+    "standard": "^14.3.4"
   }
 }
