@@ -10,6 +10,7 @@
   "main": "src/matcher/index.js",
   "scripts": {
     "standard": "standard",
+    "postpublish": "npm version patch && git push",
     "test": "npx jest --coverage"
   },
   "files": [
