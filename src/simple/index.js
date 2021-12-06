@@ -209,37 +209,17 @@ const filter = (inner, f) => function * (string, i) {
   }
 }
 
-const parser = inner => function * (string) {
-  for (const value of inner(string, 0)) {
-    if (value.j === string.length) {
-      yield value.match
-    }
-  }
-}
-
-const parse1 = inner => string => {
-  for (const value of inner(string, 0)) {
-    if (value.j !== string.length) {
-      continue
-    }
-    return value.match
-  }
-  throw Error('Parsing failed')
-}
-
 module.exports = {
   NOTHING,
   EMPTY,
   CHR,
   UNICODE,
   fixed,
+  regex,
   or,
   seq,
   times,
   resolve,
   map,
-  filter,
-  regex,
-  parser,
-  parse1
+  filter
 }

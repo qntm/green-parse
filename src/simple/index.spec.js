@@ -12,9 +12,7 @@ const {
   resolve,
   map,
   filter,
-  regex,
-  parser,
-  parse1
+  regex
 } = require('.')
 
 describe('simple match generator functions', () => {
@@ -355,45 +353,6 @@ describe('simple match generator functions', () => {
       const matcher = regex(/^[0-9a-fA-F]([0-9a-fA-F])/)
       expect([...matcher('0x0134af1', 4)]).toEqual([
         { j: 6, match: ['34', '4'] }
-      ])
-    })
-  })
-
-  describe('parser', () => {
-    it('works', () => {
-      const p = parser(times(or([fixed('a'), fixed('aa')]), 0, Infinity, EMPTY))
-      expect([...p('aaaa')]).toEqual([
-        ['a', 'a', 'a', 'a'],
-        ['a', 'a', 'aa'],
-        ['a', 'aa', 'a'],
-        ['aa', 'a', 'a'],
-        ['aa', 'aa']
-      ])
-    })
-
-    it('promotes', () => {
-      const p = parser(regex(/^a+/))
-      expect([...p('aaaa')]).toEqual([
-        ['aaaa']
-      ])
-    })
-  })
-
-  describe('parse1', () => {
-    it('works', () => {
-      const p = parse1(times(fixed('a'), 0, Infinity, EMPTY))
-      expect(p('aaa')).toEqual(['a', 'a', 'a'])
-      expect(p('a')).toEqual(['a'])
-      expect(p('')).toEqual([])
-      expect(() => p('aaab')).toThrowError('Parsing failed')
-      expect(() => p('b')).toThrowError('Parsing failed')
-    })
-
-    it('promotes', () => {
-      const p = parse1(regex(/^(ab)+/))
-      expect(p('ababab')).toEqual([
-        'ababab',
-        'ab'
       ])
     })
   })
