@@ -3,108 +3,109 @@
 
 const simple = require('../simple')
 
-// If `inner` is a string, promote it to a `fixed` `Matcher` for that string.
-// If it's a regular expression, promote it to a `regex` `Matcher`.
-const promote = inner => typeof inner === 'string' ? Matcher.fixed(inner)
-  : Object.prototype.toString.call(inner) === '[object RegExp]' ? Matcher.regex(inner)
-    : inner
+const promote = value => typeof value === 'string'
+  ? fixed(value)
+  : Object.prototype.toString.call(value) === '[object RegExp]'
+    ? regex(value)
+    : value
 
 /**
   Construct a Matcher function from a simple match generator function. Users
   should generally not call this constructor directly.
 */
-const Matcher = inner => {
-  /* istanbul ignore next */
-  if ('match' in inner) {
-    throw Error('Can\'t make a Matcher from a Matcher')
+class Matcher {
+  constructor (inner) {
+    if (typeof inner !== 'function') {
+      throw Error('Can\'t make a Matcher from anything but a function')
+    }
+
+    this.match = inner
   }
 
-  const matcher = {
-    match: inner,
-    parse: simple.parser(inner),
-    parse1: simple.parse1(inner)
+  * parse (string) {
+    for (const value of this.match(string, 0)) {
+      if (value.j === string.length) {
+        yield value.match
+      }
+    }
   }
 
-  Object.assign(matcher, {
-    or: other => Matcher.or([matcher, other]),
-    seq: (other, separator) => Matcher.seq([matcher, other], separator),
-    times: (min, max, separator) => Matcher.times(matcher, min, max, separator),
-    star: separator => Matcher.star(matcher, separator),
-    plus: separator => Matcher.plus(matcher, separator),
-    maybe: () => Matcher.maybe(matcher),
-    map: f => Matcher.map(matcher, f),
-    filter: f => Matcher.filter(matcher, f)
-  })
+  parse1 (string) {
+    for (const value of this.match(string, 0)) {
+      if (value.j !== string.length) {
+        continue
+      }
+      return value.match
+    }
+    throw Error('Parsing failed')
+  }
 
-  return matcher
+  or (other) {
+    return or([this, other])
+  }
+
+  seq (other, separator = EMPTY) {
+    return seq([this, other], separator)
+  }
+
+  times (min, max, separator = EMPTY) {
+    return new Matcher(simple.times(this.match, min, max, promote(separator).match))
+  }
+
+  star (separator) {
+    return this.times(0, Infinity, separator)
+  }
+
+  plus (separator) {
+    return this.times(1, Infinity, separator)
+  }
+
+  maybe () {
+    return this.times(0, 1)
+  }
+
+  map (f) {
+    return new Matcher(simple.map(this.match, f))
+  }
+
+  filter (f) {
+    return new Matcher(simple.filter(this.match, f))
+  }
 }
 
-// Matcher class members. Extracting and rewrapping functions reduces stack
-// depth
-Object.assign(Matcher, {
-  NOTHING: Matcher(simple.NOTHING),
-  EMPTY: Matcher(simple.EMPTY),
-  CHR: Matcher(simple.CHR),
-  UNICODE: Matcher(simple.UNICODE),
+const NOTHING = new Matcher(simple.NOTHING)
+const EMPTY = new Matcher(simple.EMPTY)
+const CHR = new Matcher(simple.CHR)
+const UNICODE = new Matcher(simple.UNICODE)
 
-  fixed: needle =>
-    Matcher(simple.fixed(needle)),
+const fixed = needle =>
+  new Matcher(simple.fixed(needle))
 
-  or: matchers =>
-    Matcher(simple.or(matchers.map(matcher => promote(matcher).match))),
+const regex = regExp =>
+  new Matcher(simple.regex(regExp))
 
-  seq: (matchers, separator) =>
-    Matcher(simple.seq(
-      matchers.map(matcher => promote(matcher).match),
-      separator === undefined ? undefined : promote(separator).match
-    )),
+const or = matchers =>
+  new Matcher(simple.or(matchers.map(matcher => promote(matcher).match)))
 
-  times: (matcher, min, max, separator) =>
-    Matcher(simple.times(
-      promote(matcher).match,
-      min,
-      max,
-      separator === undefined ? undefined : promote(separator).match
-    )),
+const seq = (matchers, separator = EMPTY) =>
+  new Matcher(simple.seq(matchers.map(matcher => promote(matcher).match), promote(separator).match))
 
-  star: (matcher, separator) =>
-    Matcher(simple.star(
-      promote(matcher).match,
-      separator === undefined ? undefined : promote(separator).match
-    )),
+const resolve = open => {
+  const closed = open(nonterminal => new Matcher((string, i) => closed[nonterminal].match(string, i)))
 
-  plus: (matcher, separator) =>
-    Matcher(simple.plus(
-      promote(matcher).match,
-      separator === undefined ? undefined : promote(separator).match
-    )),
+  Object.keys(closed).forEach(nonterminal => {
+    closed[nonterminal] = promote(closed[nonterminal])
+  })
 
-  maybe: matcher =>
-    Matcher(simple.maybe(promote(matcher).match)),
+  return closed
+}
 
-  resolve: open => {
-    const closed = Object.fromEntries(
-      Object.entries(
-        open(nonterminal =>
-          Matcher((string, i) =>
-            closed[nonterminal].match(string, i)
-          )
-        )
-      ).map(([nonterminal, matcher]) =>
-        [nonterminal, promote(matcher)]
-      )
-    )
-    return closed
-  },
-
-  map: (matcher, f) =>
-    Matcher(simple.map(promote(matcher).match, f)),
-
-  filter: (matcher, f) =>
-    Matcher(simple.filter(promote(matcher).match, f)),
-
-  regex: regExp =>
-    Matcher(simple.regex(regExp))
-})
-
-module.exports = Matcher
+module.exports.NOTHING = NOTHING
+module.exports.EMPTY = EMPTY
+module.exports.CHR = CHR
+module.exports.UNICODE = UNICODE
+module.exports.fixed = fixed
+module.exports.regex = regex
+module.exports.or = or
+module.exports.seq = seq
+module.exports.resolve = resolve
