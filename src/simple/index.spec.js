@@ -9,15 +9,10 @@ const {
   or,
   seq,
   times,
-  star,
-  plus,
-  maybe,
   resolve,
   map,
   filter,
-  regex,
-  parser,
-  parse1
+  regex
 } = require('.')
 
 describe('simple match generator functions', () => {
@@ -81,57 +76,57 @@ describe('simple match generator functions', () => {
 
   describe('or', () => {
     it('promotes strings to fixed matchers', () => {
-      const aorborc = or(['a', 'b', 'c'])
+      const aorborc = or([fixed('a'), fixed('b'), fixed('c')])
       expect([...aorborc('a', 0)]).toEqual([{ j: 1, match: 'a' }])
       expect([...aorborc('b', 0)]).toEqual([{ j: 1, match: 'b' }])
       expect([...aorborc('z', 0)]).toEqual([])
 
-      const aora = or(['a', 'a'])
+      const aora = or([fixed('a'), fixed('a')])
       expect([...aora('a', 0)]).toEqual([{ j: 1, match: 'a' }, { j: 1, match: 'a' }])
     })
 
     it('also works', () => {
-      const aorborc = or([or(['a', 'b']), 'c'])
+      const aorborc = or([or([fixed('a'), fixed('b')]), fixed('c')])
       expect([...aorborc('b', 0)]).toEqual([{ j: 1, match: 'b' }])
     })
 
     it('also also works', () => {
-      const aorborc = or(['a', or(['b', 'c'])])
+      const aorborc = or([fixed('a'), or([fixed('b'), fixed('c')])])
       expect([...aorborc('c', 0)]).toEqual([{ j: 1, match: 'c' }])
     })
   })
 
   describe('seq', () => {
     it('works for an empty string', () => {
-      const emptyString = seq([])
+      const emptyString = seq([], EMPTY)
       expect([...emptyString('a', 0)]).toEqual([{ j: 0, match: [] }])
     })
 
     it('works', () => {
-      const a = seq(['a'])
+      const a = seq([fixed('a')], EMPTY)
       expect([...a('a', 0)]).toEqual([{ j: 1, match: ['a'] }])
 
-      const aa = seq(['a', 'a'])
+      const aa = seq([fixed('a'), fixed('a')], EMPTY)
       expect([...aa('aa', 0)]).toEqual([{ j: 2, match: ['a', 'a'] }])
 
-      const aaa = seq(['a', 'a', 'a'])
+      const aaa = seq([fixed('a'), fixed('a'), fixed('a')], EMPTY)
       expect([...aaa('aaa', 0)]).toEqual([{ j: 3, match: ['a', 'a', 'a'] }])
     })
 
     it('also works', () => {
-      const aaa = seq([seq(['a', 'a']), 'a'])
+      const aaa = seq([seq([fixed('a'), fixed('a')], EMPTY), fixed('a')], EMPTY)
       expect([...aaa('aaa', 0)]).toEqual([{ j: 3, match: [['a', 'a'], 'a'] }])
     })
 
     it('also also works', () => {
-      const aaa = seq(['a', seq(['a', 'a'])])
+      const aaa = seq([fixed('a'), seq([fixed('a'), fixed('a')], EMPTY)], EMPTY)
       expect([...aaa('aaa', 0)]).toEqual([{ j: 3, match: ['a', ['a', 'a']] }])
     })
 
     it('wseq works', () => {
       const matcher = seq(
-        ['a', 'b', 'c'],
-        star(' ')
+        [fixed('a'), fixed('b'), fixed('c')],
+        times(fixed(' '), 0, Infinity, EMPTY)
       )
       expect([...matcher('abc', 0)]).toEqual([{ j: 3, match: ['a', 'b', 'c'] }])
       expect([...matcher('a b c', 0)]).toEqual([{ j: 5, match: ['a', 'b', 'c'] }])
@@ -140,16 +135,16 @@ describe('simple match generator functions', () => {
 
     it('wseq promotes the separator', () => {
       const matcher = seq(
-        ['a', 'b', 'c'],
-        ' '
+        [fixed('a'), fixed('b'), fixed('c')],
+        fixed(' ')
       )
       expect([...matcher('a b c', 0)]).toEqual([{ j: 5, match: ['a', 'b', 'c'] }])
     })
 
     it('wseq also works', () => {
       const matcher = seq(
-        ['a', 'b', 'c'],
-        plus(' ')
+        [fixed('a'), fixed('b'), fixed('c')],
+        times(fixed(' '), 1, Infinity, EMPTY)
       )
       expect([...matcher('a b c', 0)]).toEqual([{ j: 5, match: ['a', 'b', 'c'] }])
       expect([...matcher('a                 b  c', 0)]).toEqual([{ j: 22, match: ['a', 'b', 'c'] }])
@@ -158,7 +153,7 @@ describe('simple match generator functions', () => {
 
   describe('star', () => {
     it('promotes a string to a fixed matcher', () => {
-      const astar = star('a')
+      const astar = times(fixed('a'), 0, Infinity, EMPTY)
       expect([...astar('aaa', 0)]).toEqual([
         { j: 0, match: [] },
         { j: 1, match: ['a'] },
@@ -168,7 +163,7 @@ describe('simple match generator functions', () => {
     })
 
     it('does more complex', () => {
-      const aorbstar = star(or(['a', 'b']))
+      const aorbstar = times(or([fixed('a'), fixed('b')]), 0, Infinity, EMPTY)
       expect([...aorbstar('ab', 0)]).toEqual([
         { j: 0, match: [] },
         { j: 1, match: ['a'] },
@@ -179,12 +174,12 @@ describe('simple match generator functions', () => {
 
   describe('plus', () => {
     it('huh? 3', () => {
-      const astar = seq(['a'])
+      const astar = seq([fixed('a')])
       expect([...astar('aaaa', 1)]).toEqual([{ j: 2, match: ['a'] }])
     })
 
     it('huh? 2', () => {
-      const astar = seq([star('a')])
+      const astar = seq([times(fixed('a'), 0, Infinity, EMPTY)])
       expect([...astar('aaaa', 1)]).toEqual([
         { j: 1, match: [[]] },
         { j: 2, match: [['a']] },
@@ -194,8 +189,8 @@ describe('simple match generator functions', () => {
     })
 
     it('huh?', () => {
-      const a = 'a'
-      const aplus = (inner => seq([inner, star(inner)]))(a)
+      const a = fixed('a')
+      const aplus = (inner => seq([inner, times(inner, 0, Infinity, EMPTY)], EMPTY))(a)
       expect([...aplus('aaaa', 1)]).toEqual([
         { j: 2, match: ['a', []] },
         { j: 3, match: ['a', ['a']] },
@@ -204,7 +199,7 @@ describe('simple match generator functions', () => {
     })
 
     it('works', () => {
-      const aplus = plus('a')
+      const aplus = times(fixed('a'), 1, Infinity, EMPTY)
       expect([...aplus('aaaa', 1)]).toEqual([
         { j: 2, match: ['a'] },
         { j: 3, match: ['a', 'a'] },
@@ -213,7 +208,7 @@ describe('simple match generator functions', () => {
     })
 
     it('promotes a string to a fixed matcher', () => {
-      const aplus = plus('a')
+      const aplus = times(fixed('a'), 1, Infinity, EMPTY)
       expect([...aplus('aaaa', 1)]).toEqual([
         { j: 2, match: ['a'] },
         { j: 3, match: ['a', 'a'] },
@@ -222,7 +217,7 @@ describe('simple match generator functions', () => {
     })
 
     it('wplus promotes strings to fixed matchers', () => {
-      const matcher = plus('a', star(' '))
+      const matcher = times(fixed('a'), 1, Infinity, times(fixed(' '), 0, Infinity, EMPTY))
       expect([...matcher('aaaa', 0)]).toEqual([
         { j: 1, match: ['a'] },
         { j: 2, match: ['a', 'a'] },
@@ -239,10 +234,10 @@ describe('simple match generator functions', () => {
 
   describe('maybe', () => {
     it('promotes a string to a fixed matcher', () => {
-      const matcher = maybe('a')
+      const matcher = times(fixed('a'), 0, 1, EMPTY)
       expect([...matcher('a', 0)]).toEqual([
-        { j: 0, match: '' },
-        { j: 1, match: 'a' }
+        { j: 0, match: [] },
+        { j: 1, match: ['a'] }
       ])
     })
   })
@@ -250,17 +245,17 @@ describe('simple match generator functions', () => {
   describe('resolve', () => {
     it('promotes a string to a fixed matcher', () => {
       const matcher = resolve(ref => ({
-        a: 'a',
+        a: fixed('a'),
         b: ref('a')
       })).b
       expect([...matcher('a', 0)]).toEqual([{ j: 1, match: 'a' }])
     })
 
     it('works too', () => {
-      const matcher = star(resolve(ref => ({
-        a: 'a',
+      const matcher = times(resolve(ref => ({
+        a: fixed('a'),
         b: ref('a')
-      })).b)
+      })).b, 0, Infinity, EMPTY)
       expect([...matcher('a', 0)]).toEqual([
         { j: 0, match: [] },
         { j: 1, match: ['a'] }
@@ -277,7 +272,7 @@ describe('simple match generator functions', () => {
 
     it('modifies', () => {
       const matcher = resolve(ref => ({
-        a: map('a', value => 'b'),
+        a: map(fixed('a'), value => 'b'),
         b: ref('a')
       })).b
       expect([...matcher('a', 0)]).toEqual([{ j: 1, match: 'b' }])
@@ -285,7 +280,7 @@ describe('simple match generator functions', () => {
 
     it('modifies too', () => {
       const matcher = resolve(ref => ({
-        a: 'a',
+        a: fixed('a'),
         b: map(ref('a'), value => 'b')
       })).b
       expect([...matcher('a', 0)]).toEqual([{ j: 1, match: 'b' }])
@@ -294,26 +289,26 @@ describe('simple match generator functions', () => {
 
   describe('times', () => {
     it('works with max 0', () => {
-      const matcher = times('a', 0, 0)
+      const matcher = times(fixed('a'), 0, 0, EMPTY)
       expect([...matcher('aaaaa', 1)]).toEqual([{ j: 1, match: [] }])
     })
 
     it('works with max 0 and a separator', () => {
-      const matcher = times('a', 0, 0, ' ')
+      const matcher = times(fixed('a'), 0, 0, fixed(' '))
       expect([...matcher('a a a a a', 2)]).toEqual([{ j: 2, match: [] }])
     })
   })
 
   describe('map', () => {
     it('works', () => {
-      const matcher = map('a', match => match + match)
+      const matcher = map(fixed('a'), match => match + match)
       expect([...matcher('a', 0)]).toEqual([{ j: 1, match: 'aa' }])
     })
   })
 
   describe('filter', () => {
     it('what 2', () => {
-      const matcher = star(UNICODE)
+      const matcher = times(UNICODE, 0, Infinity, EMPTY)
       expect([...matcher('bc', 0)]).toEqual([
         { j: 0, match: [] },
         { j: 1, match: ['b'] },
@@ -327,7 +322,7 @@ describe('simple match generator functions', () => {
     })
 
     it('how', () => {
-      const matcher = star(filter(UNICODE, match => match !== 'c'))
+      const matcher = times(filter(UNICODE, match => match !== 'c'), 0, Infinity, EMPTY)
       expect([...matcher('bc', 0)]).toEqual([
         { j: 0, match: [] },
         { j: 1, match: ['b'] }
@@ -335,7 +330,7 @@ describe('simple match generator functions', () => {
     })
 
     it('works', () => {
-      const matcher = star(filter(UNICODE, match => match !== 'c'))
+      const matcher = times(filter(UNICODE, match => match !== 'c'), 0, Infinity, EMPTY)
       expect([...matcher('abc', 0)]).toEqual([
         { j: 0, match: [] },
         { j: 1, match: ['a'] },
@@ -358,45 +353,6 @@ describe('simple match generator functions', () => {
       const matcher = regex(/^[0-9a-fA-F]([0-9a-fA-F])/)
       expect([...matcher('0x0134af1', 4)]).toEqual([
         { j: 6, match: ['34', '4'] }
-      ])
-    })
-  })
-
-  describe('parser', () => {
-    it('works', () => {
-      const p = parser(star(or(['a', 'aa'])))
-      expect([...p('aaaa')]).toEqual([
-        ['a', 'a', 'a', 'a'],
-        ['a', 'a', 'aa'],
-        ['a', 'aa', 'a'],
-        ['aa', 'a', 'a'],
-        ['aa', 'aa']
-      ])
-    })
-
-    it('promotes', () => {
-      const p = parser(/^a+/)
-      expect([...p('aaaa')]).toEqual([
-        ['aaaa']
-      ])
-    })
-  })
-
-  describe('parse1', () => {
-    it('works', () => {
-      const p = parse1(star(fixed('a')))
-      expect(p('aaa')).toEqual(['a', 'a', 'a'])
-      expect(p('a')).toEqual(['a'])
-      expect(p('')).toEqual([])
-      expect(() => p('aaab')).toThrowError('Expected 1 result, got 0')
-      expect(() => p('b')).toThrowError('Expected 1 result, got 0')
-    })
-
-    it('promotes', () => {
-      const p = parse1(/^(ab)+/)
-      expect(p('ababab')).toEqual([
-        'ababab',
-        'ab'
       ])
     })
   })

@@ -37,7 +37,7 @@ describe('Wirth grammar', () => {
     const match3 = grammar2.SYNTAX.parse1(' A = "A" . ')
     const whitespaces = [[' '], []]
     expect(match3).toEqual([
-      [whitespaces],
+      [[whitespaces]],
       [
         // first PRODUCTION
         [
@@ -98,7 +98,7 @@ describe('Wirth grammar', () => {
         // all other PRODUCTIONs
         []
       ],
-      [whitespaces]
+      [[whitespaces]]
     ])
 
     // It can even parse itself!

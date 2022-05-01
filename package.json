@@ -9,8 +9,10 @@
   },
   "main": "src/matcher/index.js",
   "scripts": {
+    "jest": "jest --coverage",
+    "postpublish": "npm version patch && git push",
     "standard": "standard",
-    "test": "npx jest --coverage"
+    "test": "npm run standard && npm run jest"
   },
   "files": [
     "src",
