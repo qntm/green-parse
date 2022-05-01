@@ -1,9 +1,16 @@
 // Simple match generators
-// It is assumed that `i` is from 0 to `string.length` inclusive.
+// It is assumed that `i` is an integer from 0 to `string.length` inclusive.
 // Functions operating on existing simple match generator functions are all
 // capable of promoting a single string to a simple match generator function.
 
 const NOTHING = function * (string, i) {}
+
+const EMPTY = function * (string, i) {
+  yield {
+    j: i,
+    match: ''
+  }
+}
 
 const CHR = function * (string, i) {
   if (i < string.length) {
@@ -46,8 +53,6 @@ const fixed = needle => function * (string, i) {
   }
 }
 
-const EMPTY = fixed('')
-
 const regex = regExp => {
   if (regExp.global) {
     throw Error('Can\'t use a global RegExp')
@@ -66,6 +71,7 @@ const regex = regExp => {
   }
 }
 
+<<<<<<< HEAD
 // If `inner` is a string, promote it to a `fixed` simple match generator for
 // that string. If it's a regular expression object, promote it to a `regex`.
 const promote = inner => typeof inner === 'string'
@@ -99,6 +105,15 @@ const seq = (inners, separator = EMPTY) => {
 
   separator = promote(separator)
   inners = inners.map(promote)
+=======
+const or = inners => function * (string, i) {
+  for (const inner of inners) {
+    yield * inner(string, i)
+  }
+}
+
+const seq = (inners, separator) => {
+>>>>>>> 1a2af00633e55141b1c59fa7d290d3b4a1c11326
   inners = inners.map((inner, i) => i === 0
     ? inner
     : function * (string, i) {
@@ -109,6 +124,7 @@ const seq = (inners, separator = EMPTY) => {
   )
 
   return function * (string, i) {
+<<<<<<< HEAD
     const inner = inners[0]
     const iterator = inner(string, i)
     const stack = [{ iterator }]
@@ -134,12 +150,48 @@ const seq = (inners, separator = EMPTY) => {
         }
       }
     }
+=======
+    const stack = []
+    let j
+
+    do {
+      if (stack.length === 0) {
+        j = i
+      } else {
+        const frame = stack[stack.length - 1]
+        const next = frame.iterator.next()
+
+        if (next.done) {
+          stack.pop()
+          continue
+        }
+
+        frame.match = next.value.match
+        j = next.value.j
+      }
+
+      if (stack.length === inners.length) {
+        yield {
+          j,
+          match: stack.map(frame => frame.match)
+        }
+      }
+
+      if (stack.length < inners.length) {
+        // stack not full yet
+        const inner = inners[stack.length]
+        const iterator = inner(string, j)
+        stack.push({ iterator })
+      }
+    } while (stack.length - 1 in stack)
+>>>>>>> 1a2af00633e55141b1c59fa7d290d3b4a1c11326
 
     // stack is empty, we're done
   }
 }
 
 // `min` and `max` are inclusive
+<<<<<<< HEAD
 const times = (inner, min, max, separator = EMPTY) => {
   if (max === 0) {
     return function * (string, i) {
@@ -152,15 +204,19 @@ const times = (inner, min, max, separator = EMPTY) => {
 
   separator = promote(separator)
   inner = promote(inner)
+=======
+const times = (inner, min, max, separator) => {
+>>>>>>> 1a2af00633e55141b1c59fa7d290d3b4a1c11326
   const firstInner = inner
   const nonFirstInner = function * (string, i) {
     for (const separatorValue of separator(string, i)) {
-      yield * firstInner(string, separatorValue.j)
+      yield * inner(string, separatorValue.j)
     }
   }
 
   return function * (string, i) {
     const stack = []
+<<<<<<< HEAD
     while (true) {
       if (stack.length === 0) {
         const j = i
@@ -227,74 +283,66 @@ const star = (inner, separator) =>
 
 const plus = (inner, separator) =>
   times(inner, 1, Infinity, separator)
+=======
+    let j
 
-const maybe = inner => {
-  inner = promote(inner)
-  return function * (string, i) {
-    yield * EMPTY(string, i)
-    yield * inner(string, i)
+    do {
+      if (stack.length === 0) {
+        j = i
+      } else {
+        const frame = stack[stack.length - 1]
+        const next = frame.iterator.next()
+
+        if (next.done) {
+          stack.pop()
+          continue
+        }
+
+        frame.match = next.value.match
+        j = next.value.j
+      }
+
+      if (min <= stack.length && stack.length <= max) {
+        yield {
+          j,
+          match: stack.map(frame => frame.match)
+        }
+      }
+
+      if (stack.length < max) {
+        // stack not full yet
+        const inner = stack.length === 0 ? firstInner : nonFirstInner
+        const iterator = inner(string, j)
+        stack.push({ iterator })
+      }
+    } while (stack.length - 1 in stack)
+>>>>>>> 1a2af00633e55141b1c59fa7d290d3b4a1c11326
+
+    // stack is empty, we're done
   }
 }
 
 // inners are values of the object returned from `ref`
 const resolve = open => {
-  const closed = Object.fromEntries(
-    Object.entries(
-      open(nonterminal =>
-        (string, i) =>
-          closed[nonterminal](string, i)
-      )
-    ).map(([nonterminal, inner]) =>
-      [nonterminal, promote(inner)]
-    )
-  )
+  const ref = nonterminal => (string, i) => closed[nonterminal](string, i)
+  const closed = open(ref)
   return closed
 }
 
-const map = (inner, f) => {
-  inner = promote(inner)
-  return function * (string, i) {
-    for (const value of inner(string, i)) {
-      yield {
-        j: value.j,
-        match: f(value.match)
-      }
+const map = (inner, f) => function * (string, i) {
+  for (const value of inner(string, i)) {
+    yield {
+      j: value.j,
+      match: f(value.match)
     }
   }
 }
 
-const filter = (inner, f) => {
-  inner = promote(inner)
-  return function * (string, i) {
-    for (const value of inner(string, i)) {
-      if (f(value.match)) {
-        yield value
-      }
+const filter = (inner, f) => function * (string, i) {
+  for (const value of inner(string, i)) {
+    if (f(value.match)) {
+      yield value
     }
-  }
-}
-
-const parser = inner => {
-  inner = promote(inner)
-  return function * (string) {
-    for (const value of inner(string, 0)) {
-      if (value.j === string.length) {
-        yield value.match
-      }
-    }
-  }
-}
-
-const parse1 = inner => {
-  inner = promote(inner)
-  return string => {
-    for (const value of inner(string, 0)) {
-      if (value.j !== string.length) {
-        continue
-      }
-      return value.match
-    }
-    throw Error('Expected 1 result, got 0')
   }
 }
 
@@ -304,16 +352,11 @@ module.exports = {
   CHR,
   UNICODE,
   fixed,
+  regex,
   or,
   seq,
   times,
-  star,
-  plus,
-  maybe,
   resolve,
   map,
-  filter,
-  regex,
-  parser,
-  parse1
+  filter
 }

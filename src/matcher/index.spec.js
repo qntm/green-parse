@@ -8,13 +8,7 @@ const {
   fixed,
   or,
   seq,
-  times,
-  star,
-  plus,
-  maybe,
-  resolve,
-  map,
-  filter
+  resolve
 } = require('.')
 
 describe('Matcher', () => {
@@ -146,7 +140,7 @@ describe('Matcher', () => {
       })
 
       it('huh? 2', () => {
-        const a = seq([star('a')])
+        const a = seq([fixed('a').star()])
         expect([...a.match('aaaa', 1)]).toEqual([
           { j: 1, match: [[]] },
           { j: 2, match: [['a']] },
@@ -164,15 +158,6 @@ describe('Matcher', () => {
     })
 
     describe('times', () => {
-      it('works', () => {
-        const aa24 = times('a', 2, 4)
-        expect([...aa24.match('aaaaaaa', 1)]).toEqual([
-          { j: 3, match: ['a', 'a'] },
-          { j: 4, match: ['a', 'a', 'a'] },
-          { j: 5, match: ['a', 'a', 'a', 'a'] }
-        ])
-      })
-
       it('alternate syntax', () => {
         const aa24 = fixed('a').times(2, 4)
         expect([...aa24.match('aaaaaaa', 1)]).toEqual([
@@ -183,28 +168,28 @@ describe('Matcher', () => {
       })
 
       it('works with separator', () => {
-        const aa11nosep = times('a', 1, 1)
+        const aa11nosep = fixed('a').times(1, 1)
         expect([...aa11nosep.match('a a a a a a a', 2)]).toEqual([
           { j: 3, match: ['a'] }
         ])
 
-        const aa11 = times('a', 1, 1, ' ')
+        const aa11 = fixed('a').times(1, 1, ' ')
         expect([...aa11.match('a a a a a a a', 2)]).toEqual([
           { j: 3, match: ['a'] }
         ])
 
-        const aa22 = times('a', 2, 2, ' ')
+        const aa22 = fixed('a').times(2, 2, ' ')
         expect([...aa22.match('a a a a a a a', 2)]).toEqual([
           { j: 5, match: ['a', 'a'] }
         ])
 
-        const aa12 = times('a', 1, 2, ' ')
+        const aa12 = fixed('a').times(1, 2, ' ')
         expect([...aa12.match('a a a a a a a', 2)]).toEqual([
           { j: 3, match: ['a'] },
           { j: 5, match: ['a', 'a'] }
         ])
 
-        const aa24 = times('a', 2, 4, ' ')
+        const aa24 = fixed('a').times(2, 4, ' ')
         expect([...aa24.match('a a a a a a a', 2)]).toEqual([
           { j: 5, match: ['a', 'a'] },
           { j: 7, match: ['a', 'a', 'a'] },
@@ -214,16 +199,6 @@ describe('Matcher', () => {
     })
 
     describe('star', () => {
-      it('works', () => {
-        const astar = star('a')
-        expect([...astar.match('aaa', 0)]).toEqual([
-          { j: 0, match: [] },
-          { j: 1, match: ['a'] },
-          { j: 2, match: ['a', 'a'] },
-          { j: 3, match: ['a', 'a', 'a'] }
-        ])
-      })
-
       it('alternate syntax', () => {
         const astar = fixed('a').star()
         expect([...astar.match('aaa', 0)]).toEqual([
@@ -235,7 +210,7 @@ describe('Matcher', () => {
       })
 
       it('does more complex', () => {
-        const aorbstar = star(or(['a', 'b']))
+        const aorbstar = or(['a', 'b']).star()
         expect([...aorbstar.match('ab', 0)]).toEqual([
           { j: 0, match: [] },
           { j: 1, match: ['a'] },
@@ -300,15 +275,6 @@ describe('Matcher', () => {
     })
 
     describe('plus', () => {
-      it('works', () => {
-        const aplus = plus('a')
-        expect([...aplus.match('aaaa', 1)]).toEqual([
-          { j: 2, match: ['a'] },
-          { j: 3, match: ['a', 'a'] },
-          { j: 4, match: ['a', 'a', 'a'] }
-        ])
-      })
-
       it('alternate syntax', () => {
         const aplus = fixed('a').plus()
         expect([...aplus.match('aaaa', 1)]).toEqual([
@@ -319,7 +285,7 @@ describe('Matcher', () => {
       })
 
       it('wplus works', () => {
-        const matcher = plus('a', fixed(' ').star())
+        const matcher = fixed('a').plus(fixed(' ').star())
         expect([...matcher.match('aaaa', 0)]).toEqual([
           { j: 1, match: ['a'] },
           { j: 2, match: ['a', 'a'] },
@@ -330,16 +296,6 @@ describe('Matcher', () => {
           { j: 1, match: ['a'] },
           { j: 7, match: ['a', 'a'] },
           { j: 21, match: ['a', 'a', 'a'] }
-        ])
-      })
-    })
-
-    describe('maybe', () => {
-      it('works', () => {
-        const matcher = maybe('a')
-        expect([...matcher.match('a', 0)]).toEqual([
-          { j: 0, match: '' },
-          { j: 1, match: 'a' }
         ])
       })
     })
@@ -394,16 +350,9 @@ describe('Matcher', () => {
       })
     })
 
-    describe('map', () => {
-      it('works', () => {
-        const matcher = map('a', match => match + match)
-        expect([...matcher.match('a', 0)]).toEqual([{ j: 1, match: 'aa' }])
-      })
-    })
-
     describe('filter', () => {
       it('works', () => {
-        const matcher = filter('a', match => match === 'b')
+        const matcher = fixed('a').filter(match => match === 'b')
         expect([...matcher.match('a', 0)]).toEqual([])
       })
 
@@ -427,19 +376,11 @@ describe('Matcher', () => {
     })
 
     describe('maybe', () => {
-      it('works', () => {
-        const matcher = maybe('a')
-        expect([...matcher.match('a', 0)]).toEqual([
-          { j: 0, match: '' },
-          { j: 1, match: 'a' }
-        ])
-      })
-
       it('alternate syntax', () => {
         const matcher = fixed('a').maybe()
         expect([...matcher.match('a', 0)]).toEqual([
-          { j: 0, match: '' },
-          { j: 1, match: 'a' }
+          { j: 0, match: [] },
+          { j: 1, match: ['a'] }
         ])
       })
     })
@@ -465,8 +406,8 @@ describe('Matcher', () => {
         expect(matcher.parse1('aaa')).toEqual(['a', 'a', 'a'])
         expect(matcher.parse1('a')).toEqual(['a'])
         expect(matcher.parse1('')).toEqual([])
-        expect(() => matcher.parse1('aaab')).toThrowError('Expected 1 result, got 0')
-        expect(() => matcher.parse1('b')).toThrowError('Expected 1 result, got 0')
+        expect(() => matcher.parse1('aaab')).toThrowError('Parsing failed')
+        expect(() => matcher.parse1('b')).toThrowError('Parsing failed')
       })
     })
   })

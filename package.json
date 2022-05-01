@@ -9,9 +9,10 @@
   },
   "main": "src/matcher/index.js",
   "scripts": {
-    "standard": "standard",
+    "jest": "jest --coverage",
     "postpublish": "npm version patch && git push",
-    "test": "npx jest --coverage"
+    "standard": "standard",
+    "test": "npm run standard && npm run jest"
   },
   "files": [
     "src",
@@ -20,7 +21,7 @@
   "author": "qntm",
   "license": "MIT",
   "devDependencies": {
-    "jest": "^26.1.0",
+    "jest": "^27.0.3",
     "standard": "^16.0.1"
   }
 }

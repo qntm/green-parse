@@ -1,6 +1,6 @@
 /* eslint-env jest */
 
-const { fixed, or, seq, plus, star, resolve } = require('.')
+const { fixed, or, seq, resolve } = require('.')
 
 describe('grammar school', () => {
   it('fixed', () => {
@@ -73,7 +73,7 @@ describe('grammar school', () => {
 
   const matchSequence = matchMaybeStarredTerm.plus()
 
-  const matchProduction = plus(matchSequence, '|')
+  const matchProduction = matchSequence.plus('|')
 
   it('matchProduction', () => {
     expect([...matchProduction.match("a|a'5'*abc", 0)]).toEqual([
@@ -219,7 +219,7 @@ describe('grammar school', () => {
       ]),
       b: or([
         seq(['2']),
-        seq([star('3')])
+        seq([fixed('3').star()])
       ])
     })).a
 
