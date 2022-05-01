@@ -89,45 +89,38 @@ const seq = (inners, separator) => {
 
   return function * (string, i) {
     const stack = []
+    let j
 
-    if (stack.length === inners.length) {
-      yield {
-        j: i,
-        match: []
-      }
-    }
-
-    if (stack.length < inners.length) {
-      // stack not full yet
-      const inner = inners[0]
-      const iterator = inner(string, i)
-      stack.push({ iterator })
-    }
-
-    while (stack.length - 1 in stack) {
-      const frame = stack[stack.length - 1]
-      const { done, value } = frame.iterator.next()
-
-      if (done) {
-        stack.pop()
+    do {
+      if (stack.length === 0) {
+        j = i
       } else {
-        frame.value = value
+        const frame = stack[stack.length - 1]
+        const next = frame.iterator.next()
 
-        if (stack.length === inners.length) {
-          yield {
-            j: frame.value.j,
-            match: stack.map(frame => frame.value.match)
-          }
+        if (next.done) {
+          stack.pop()
+          continue
         }
 
-        if (stack.length < inners.length) {
-          // stack not full yet
-          const inner = inners[stack.length]
-          const iterator = inner(string, frame.value.j)
-          stack.push({ iterator })
+        frame.match = next.value.match
+        j = next.value.j
+      }
+
+      if (stack.length === inners.length) {
+        yield {
+          j,
+          match: stack.map(frame => frame.match)
         }
       }
-    }
+
+      if (stack.length < inners.length) {
+        // stack not full yet
+        const inner = inners[stack.length]
+        const iterator = inner(string, j)
+        stack.push({ iterator })
+      }
+    } while (stack.length - 1 in stack)
 
     // stack is empty, we're done
   }
@@ -135,6 +128,7 @@ const seq = (inners, separator) => {
 
 // `min` and `max` are inclusive
 const times = (inner, min, max, separator) => {
+  const firstInner = inner
   const nonFirstInner = function * (string, i) {
     for (const separatorValue of separator(string, i)) {
       yield * inner(string, separatorValue.j)
@@ -143,43 +137,38 @@ const times = (inner, min, max, separator) => {
 
   return function * (string, i) {
     const stack = []
+    let j
 
-    if (min <= stack.length && stack.length <= max) {
-      yield {
-        j: i,
-        match: []
-      }
-    }
-
-    if (stack.length < max) {
-      // stack not full yet
-      const iterator = inner(string, i)
-      stack.push({ iterator })
-    }
-
-    while (stack.length - 1 in stack) {
-      const frame = stack[stack.length - 1]
-      const { done, value } = frame.iterator.next()
-
-      if (done) {
-        stack.pop()
+    do {
+      if (stack.length === 0) {
+        j = i
       } else {
-        frame.value = value
+        const frame = stack[stack.length - 1]
+        const next = frame.iterator.next()
 
-        if (min <= stack.length && stack.length <= max) {
-          yield {
-            j: frame.value.j,
-            match: stack.map(frame => frame.value.match)
-          }
+        if (next.done) {
+          stack.pop()
+          continue
         }
 
-        if (stack.length < max) {
-          // stack not full yet
-          const iterator = nonFirstInner(string, frame.value.j)
-          stack.push({ iterator })
+        frame.match = next.value.match
+        j = next.value.j
+      }
+
+      if (min <= stack.length && stack.length <= max) {
+        yield {
+          j,
+          match: stack.map(frame => frame.match)
         }
       }
-    }
+
+      if (stack.length < max) {
+        // stack not full yet
+        const inner = stack.length === 0 ? firstInner : nonFirstInner
+        const iterator = inner(string, j)
+        stack.push({ iterator })
+      }
+    } while (stack.length - 1 in stack)
 
     // stack is empty, we're done
   }
