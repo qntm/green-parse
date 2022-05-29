@@ -1,30 +1,39 @@
-const { resolve, seq, or, UNICODE, fixed } = require('../src/matcher')
+import { resolve, seq, or, UNICODE, fixed } from '../src/matcher/index.js'
 
 // This object matches strings conforming to Wirth syntax notation.
 // The output value is a matcher for strings conforming to the syntax described in the Wirth grammar.
-module.exports = resolve(ref => ({
+export default resolve(ref => ({
   SYNTAX: seq([ref('s').maybe(), ref('PRODUCTIONS'), ref('s').maybe()])
     .map(([space1, productions, space2]) => resolve(ref2 => {
       const constructMatcher = thing => {
         switch (thing.type) {
-          case 'EXPRESSION':
+          case 'EXPRESSION': {
             return or(thing.terms.map(constructMatcher))
-          case 'TERM':
+          }
+          case 'TERM': {
             return seq(thing.factors.map(constructMatcher))
-          case 'IDENTIFIER':
+          }
+          case 'IDENTIFIER': {
             return ref2(thing.identifier)
-          case 'LITERAL':
+          }
+          case 'LITERAL': {
             return fixed(thing.chars)
-          case 'OPTIONAL':
+          }
+          case 'OPTIONAL': {
             return constructMatcher(thing.expression).maybe()
-          case 'GROUP':
+          }
+          case 'GROUP': {
             return seq([constructMatcher(thing.expression)])
-          case 'STAR':
+          }
+          case 'STAR': {
             return constructMatcher(thing.expression).star()
-          /* istanbul ignore next */
-          default:
+          }
+          /* c8 ignore start */
+          default: {
             // This should be impossible
             throw Error('Unrecognised type: ' + thing.type)
+          }
+          /* c8 ignore stop */
         }
       }
 

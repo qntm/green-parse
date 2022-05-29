@@ -1,27 +1,28 @@
 {
   "name": "green-parse",
-  "version": "2.0.5",
+  "version": "3.0.0",
   "description": "A little recursive descent parsing library",
   "homepage": "https://github.com/qntm/green-parse",
   "repository": {
     "type": "git",
     "url": "git://github.com/qntm/green-parse.git"
   },
+  "type": "module",
   "main": "src/matcher/index.js",
   "scripts": {
-    "jest": "jest --coverage",
+    "mocha": "c8 --100 mocha",
     "postpublish": "npm version patch && git push",
     "standard": "standard",
-    "test": "npm run standard && npm run jest"
+    "test": "npm run standard && npm run mocha"
   },
   "files": [
-    "src",
-    "!src/**/*.spec.js"
+    "src"
   ],
   "author": "qntm",
   "license": "MIT",
   "devDependencies": {
-    "jest": "^28.0.3",
+    "c8": "^7.11.3",
+    "mocha": "^10.0.0",
     "standard": "^17.0.0"
   }
 }

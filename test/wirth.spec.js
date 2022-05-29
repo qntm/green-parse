@@ -1,6 +1,8 @@
-/* eslint-env jest */
+/* eslint-env mocha */
 
-const wirthGrammar = require('./wirth')
+import assert from 'assert'
+
+import wirthGrammar from '../examples/wirth.js'
 
 describe('Wirth grammar', () => {
   it('works', () => {
@@ -36,7 +38,7 @@ describe('Wirth grammar', () => {
     // It can parse!
     const match3 = grammar2.SYNTAX.parse1(' A = "A" . ')
     const whitespaces = [[' '], []]
-    expect(match3).toEqual([
+    assert.deepStrictEqual(match3, [
       [[whitespaces]],
       [
         // first PRODUCTION
@@ -103,7 +105,7 @@ describe('Wirth grammar', () => {
 
     // It can even parse itself!
     // But the result is quite ugly since `matcher2` doesn't know how to transform the result.
-    expect(() => grammar2.SYNTAX.parse1(wirthSyntaxString)).not.toThrow()
+    assert.doesNotThrow(() => grammar2.SYNTAX.parse1(wirthSyntaxString))
   })
 
   it('does groups', () => {
@@ -112,6 +114,6 @@ describe('Wirth grammar', () => {
     `
 
     const grammar2 = wirthGrammar.SYNTAX.parse1(wirthSyntaxString)
-    expect(grammar2.thing.parse1('abd')).toEqual(['a', [['b']], 'd'])
+    assert.deepStrictEqual(grammar2.thing.parse1('abd'), ['a', [['b']], 'd'])
   })
 })

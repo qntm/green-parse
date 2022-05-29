@@ -1,7 +1,7 @@
 // A `Matcher` wraps a simple match generator function in a more complex object
 // with numerous useful methods
 
-const simple = require('../simple')
+import * as simple from '../simple/index.js'
 
 const promote = value => typeof value === 'string'
   ? fixed(value)
@@ -15,10 +15,6 @@ const promote = value => typeof value === 'string'
 */
 class Matcher {
   constructor (inner) {
-    if (typeof inner !== 'function') {
-      throw Error('Can\'t make a Matcher from anything but a function')
-    }
-
     this.match = inner
   }
 
@@ -73,24 +69,24 @@ class Matcher {
   }
 }
 
-const NOTHING = new Matcher(simple.NOTHING)
-const EMPTY = new Matcher(simple.EMPTY)
-const CHR = new Matcher(simple.CHR)
-const UNICODE = new Matcher(simple.UNICODE)
+export const NOTHING = new Matcher(simple.NOTHING)
+export const EMPTY = new Matcher(simple.EMPTY)
+export const CHR = new Matcher(simple.CHR)
+export const UNICODE = new Matcher(simple.UNICODE)
 
-const fixed = needle =>
+export const fixed = needle =>
   new Matcher(simple.fixed(needle))
 
-const regex = regExp =>
+export const regex = regExp =>
   new Matcher(simple.regex(regExp))
 
-const or = matchers =>
+export const or = matchers =>
   new Matcher(simple.or(matchers.map(matcher => promote(matcher).match)))
 
-const seq = (matchers, separator = EMPTY) =>
+export const seq = (matchers, separator = EMPTY) =>
   new Matcher(simple.seq(matchers.map(matcher => promote(matcher).match), promote(separator).match))
 
-const resolve = open => {
+export const resolve = open => {
   const closed = open(nonterminal => new Matcher((string, i) => closed[nonterminal].match(string, i)))
 
   Object.keys(closed).forEach(nonterminal => {
@@ -99,13 +95,3 @@ const resolve = open => {
 
   return closed
 }
-
-module.exports.NOTHING = NOTHING
-module.exports.EMPTY = EMPTY
-module.exports.CHR = CHR
-module.exports.UNICODE = UNICODE
-module.exports.fixed = fixed
-module.exports.regex = regex
-module.exports.or = or
-module.exports.seq = seq
-module.exports.resolve = resolve

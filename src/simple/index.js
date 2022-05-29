@@ -3,16 +3,16 @@
 // Functions operating on existing simple match generator functions are all
 // capable of promoting a single string to a simple match generator function.
 
-const NOTHING = function * (string, i) {}
+export const NOTHING = function * (string, i) {}
 
-const EMPTY = function * (string, i) {
+export const EMPTY = function * (string, i) {
   yield {
     j: i,
     match: ''
   }
 }
 
-const CHR = function * (string, i) {
+export const CHR = function * (string, i) {
   if (i < string.length) {
     yield {
       j: i + 1,
@@ -21,7 +21,7 @@ const CHR = function * (string, i) {
   }
 }
 
-const UNICODE = function * (string, i) {
+export const UNICODE = function * (string, i) {
   if (i < string.length) {
     const first = string.charAt(i)
     if (first >= '\uD800' && first <= '\uDBFF') {
@@ -44,7 +44,7 @@ const UNICODE = function * (string, i) {
   }
 }
 
-const fixed = needle => function * (string, i) {
+export const fixed = needle => function * (string, i) {
   if (string.substr(i, needle.length) === needle) {
     yield {
       j: i + needle.length,
@@ -53,7 +53,7 @@ const fixed = needle => function * (string, i) {
   }
 }
 
-const regex = regExp => {
+export const regex = regExp => {
   if (regExp.global) {
     throw Error('Can\'t use a global RegExp')
   }
@@ -71,13 +71,13 @@ const regex = regExp => {
   }
 }
 
-const or = inners => function * (string, i) {
+export const or = inners => function * (string, i) {
   for (const inner of inners) {
     yield * inner(string, i)
   }
 }
 
-const seq = (inners, separator) => {
+export const seq = (inners, separator) => {
   inners = inners.map((inner, i) => i === 0
     ? inner
     : function * (string, i) {
@@ -127,7 +127,7 @@ const seq = (inners, separator) => {
 }
 
 // `min` and `max` are inclusive
-const times = (inner, min, max, separator) => {
+export const times = (inner, min, max, separator) => {
   const firstInner = inner
   const nonFirstInner = function * (string, i) {
     for (const separatorValue of separator(string, i)) {
@@ -175,13 +175,13 @@ const times = (inner, min, max, separator) => {
 }
 
 // inners are values of the object returned from `ref`
-const resolve = open => {
+export const resolve = open => {
   const ref = nonterminal => (string, i) => closed[nonterminal](string, i)
   const closed = open(ref)
   return closed
 }
 
-const map = (inner, f) => function * (string, i) {
+export const map = (inner, f) => function * (string, i) {
   for (const value of inner(string, i)) {
     yield {
       j: value.j,
@@ -190,25 +190,10 @@ const map = (inner, f) => function * (string, i) {
   }
 }
 
-const filter = (inner, f) => function * (string, i) {
+export const filter = (inner, f) => function * (string, i) {
   for (const value of inner(string, i)) {
     if (f(value.match)) {
       yield value
     }
   }
-}
-
-module.exports = {
-  NOTHING,
-  EMPTY,
-  CHR,
-  UNICODE,
-  fixed,
-  regex,
-  or,
-  seq,
-  times,
-  resolve,
-  map,
-  filter
 }

@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 3.x.x
+
+`green-parse` now uses ES modules exclusively, not CommonJS modules.
+
 ## 2.x.x
 
 The behaviour of `resolve` has changed. Code like

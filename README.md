@@ -11,7 +11,7 @@ npm install green-parse
 ## Example
 
 ```js
-const { fixed, or, seq } = require('green-parse')
+import { fixed, or, seq } from 'green-parse'
 
 const matchZero = fixed('0')
   .map(() => 0)
@@ -45,7 +45,7 @@ for (const value of matchPositiveInteger.match('923510', 2)) {
 Returns a matcher which matches a fixed substring in the input.
 
 ```js
-const { fixed } = require('green-parse')
+import { fixed } from 'green-parse'
 
 const bMatcher = fixed('b')
 
@@ -64,7 +64,7 @@ for (const value of bMatcher.match('ddd', 1)) {
 Equivalent to `fixed('')`.
 
 ```js
-const { EMPTY } = require('green-parse')
+import { EMPTY } from 'green-parse'
 
 for (const value of EMPTY.match('abc', 1)) {
   // this loop body is executed once
@@ -77,7 +77,7 @@ for (const value of EMPTY.match('abc', 1)) {
 Matches a single character from the input string. Note that a JavaScript `String` object is a sequence of 16-bit code units, with Unicode characters outside the Basic Multilingual Plane encoded as a *surrogate pair* of code units. This matcher **does not know this**. Its matches are *always* strings with a `length` of `1`, even if that happens to be a lone surrogate.
 
 ```js
-const { CHR } = require('green-parse')
+import { CHR } from 'green-parse'
 
 for (const value of CHR.match('abc', 1)) {
   // this loop body is executed once
@@ -94,7 +94,7 @@ Matches a single Unicode character from a string. In the case of characters outs
 Returns a matcher which matches this regular expression *at the specified location* in the input. `regExp` must be a `RegExp` object *without* the global flag set and it must be anchored at the "start" of the current substring using `^`. The match value is an array containing all the regular expression's group matches.
 
 ```js
-const { regex } = require('green-parse')
+import { regex } from 'green-parse'
 
 const numberMatcher = regex(/^([1-9])([0-9]*)/)
 
@@ -111,7 +111,7 @@ Takes an array `inners` of existing matcher objects and returns a new matcher wh
 If an entry in `inners` is a string, it is promoted to a `fixed` matcher. If it is a regular expression, it is promoted to a `regex` matcher.
 
 ```js
-const { or } = require('green-parse')
+import { or } from 'green-parse'
 
 const aorbMatcher = or(['a', 'b'])
 
@@ -137,7 +137,7 @@ Match a sequence of `min` to `max` inclusive copies of `inner` in a row. Proceed
 If `inner` or `separator` is a string, it is promoted to a `fixed` matcher. If `inner` or `separator` is a `RegExp` object, it is promoted to a `regex` matcher.
 
 ```js
-const { times } = require('green-parse')
+import { times } from 'green-parse'
 
 const multiMatcher = times('a', 2, 4)
 
@@ -166,7 +166,7 @@ If a matcher `separator` is provided, it will be matched between each entry in `
 If one of the entries in `inners` is a string, it is promoted to a `fixed` matcher for that string. If it is a `RegExp` object, it is promoted to a `regex` matcher. The same is true of `separator`.
 
 ```js
-const { seq, star } = require('green-parse')
+import { seq, star } from 'green-parse'
 
 const abcMatcher = seq(['a', 'b', 'c'], star(' '))
 
@@ -183,7 +183,7 @@ Use this to transform matches. `f` should be a function which accepts a match as
 If `inner` is a string, it is promoted to a `fixed` matcher. If it is a `RegExp` object, it is promoted to a `regex` matcher.
 
 ```js
-const { star, map } = require('green-parse')
+import { star, map } import 'green-parse'
 
 const xxMatcher = map(
   star('xx'),
@@ -204,7 +204,7 @@ for (const value of xMatcher.match('xxxxxxx', 1)) {
 Use this to only return certain matches. `f` should be a function which accepts a match as input and returns a `Boolean` indicating whether to keep it or not.
 
 ```js
-const { filter, star, UNICODE } = require('green-parse')
+import { filter, star, UNICODE } from 'green-parse'
 
 const nonCMatcher = star(filter(UNICODE, match => match !== 'c'))
 
@@ -221,7 +221,7 @@ for (const value of nonCMatcher.match('abc', 0)) {
 Use this to resolve multiple mutually recursive matchers together. `open` should be a function which has a single argument `ref` and returns an object whose values are matchers which use `ref` to refer to one another. The return value is a "grammar", an object whose values are matchers which are directly recursive. This is easiest to explain with an example:
 
 ```js
-const { resolve, seq, or } = require('green-parse')
+import { resolve, seq, or } from 'green-parse'
 
 const matchers = resolve(ref => ({
   round: seq(['(', ref('term'), ')']),
@@ -248,7 +248,7 @@ The values in the object returned by `open` should all be matchers. If they are 
 Takes `string` and an integer index `i` from 0 to `string.length` inclusive. Yields values of the form `{ j, match }` where `j` is the index in the string where matching stopped and `match` can be any value, including `undefined`, depending on how this matcher was constructed.
 
 ```js
-const { plus, CHR } = require('green-parse')
+import { plus, CHR } from 'green-parse'
 
 const polyMatcher = plus(plus(CHR))
 
@@ -273,7 +273,7 @@ Same as `match(string, i)`, except:
 * the values yielded are the matches alone, and do not include `j`.
 
 ```js
-const { plus, CHR } = require('green-parse')
+import { plus, CHR } from 'green-parse'
 
 const polyMatcher = plus(plus(CHR))
 
@@ -291,7 +291,7 @@ for (const value of polyMatcher.parse('abc')) {
 **Returns** (does not yield) the first full parse. If no full parses are found, throws an exception. The second and later parses, if they exist, are ignored (in fact, never generated).
 
 ```js
-const { plus, CHR } = require('green-parse')
+import { plus, CHR } from 'green-parse'
 
 const polyMatcher = plus(plus(CHR))
 
