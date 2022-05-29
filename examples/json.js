@@ -1,4 +1,4 @@
-const {
+import {
   fixed,
   regex,
   seq,
@@ -9,9 +9,9 @@ const {
   resolve,
   map,
   filter
-} = require('../src/simple')
+} from '../src/simple/index.js'
 
-module.exports = resolve(ref => ({
+export default resolve(ref => ({
   topvalue: map(
     seq([ref('ws'), ref('value'), ref('ws')], EMPTY),
     ([space1, value, space2]) => value

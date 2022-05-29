@@ -1,10 +1,12 @@
-/* eslint-env jest */
+/* eslint-env mocha */
 
-const json = require('./json')
+import assert from 'assert'
+
+import json from '../examples/json.js'
 
 describe('json example', () => {
   it('works', () => {
-    expect([...json.topvalue(`
+    assert.deepStrictEqual([...json.topvalue(`
       {
         "a\\u0041b" : {
           "cd" : [
@@ -18,7 +20,7 @@ describe('json example', () => {
           "f\\"\\\\\\/\\b\\f\\n\\r\\t" : -34.0001E-39
         }
       }
-    `, 0)]).toEqual([{
+    `, 0)], [{
       j: 250,
       match: {
         aAb: {
