@@ -21,7 +21,7 @@
   "author": "qntm",
   "license": "MIT",
   "devDependencies": {
-    "c8": "^7.11.3",
+    "c8": "^8.0.1",
     "mocha": "^10.0.0",
     "standard": "^17.0.0"
   }
