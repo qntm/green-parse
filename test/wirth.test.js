@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 
-import assert from 'assert'
+import assert from 'node:assert/strict'
 
 import wirthGrammar from '../examples/wirth.js'
 
@@ -38,7 +38,7 @@ describe('Wirth grammar', () => {
     // It can parse!
     const match3 = grammar2.SYNTAX.parse1(' A = "A" . ')
     const whitespaces = [[' '], []]
-    assert.deepStrictEqual(match3, [
+    assert.deepEqual(match3, [
       [[whitespaces]],
       [
         // first PRODUCTION
@@ -114,6 +114,6 @@ describe('Wirth grammar', () => {
     `
 
     const grammar2 = wirthGrammar.SYNTAX.parse1(wirthSyntaxString)
-    assert.deepStrictEqual(grammar2.thing.parse1('abd'), ['a', [['b']], 'd'])
+    assert.deepEqual(grammar2.thing.parse1('abd'), ['a', [['b']], 'd'])
   })
 })
