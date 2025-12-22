@@ -1,12 +1,12 @@
 /* eslint-env mocha */
 
-import assert from 'assert'
+import assert from 'node:assert/strict'
 
 import json from '../examples/json.js'
 
 describe('json example', () => {
   it('works', () => {
-    assert.deepStrictEqual([...json.topvalue(`
+    assert.deepEqual([...json.topvalue(`
       {
         "a\\u0041b" : {
           "cd" : [
