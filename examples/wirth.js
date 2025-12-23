@@ -28,12 +28,10 @@ export default resolve(ref => ({
           case 'STAR': {
             return constructMatcher(thing.expression).star()
           }
-          /* c8 ignore start */
           default: {
             // This should be impossible
             throw Error('Unrecognised type: ' + thing.type)
           }
-          /* c8 ignore stop */
         }
       }
 
