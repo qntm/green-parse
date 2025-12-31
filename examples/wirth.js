@@ -28,10 +28,13 @@ export default resolve(ref => ({
           case 'STAR': {
             return constructMatcher(thing.expression).star()
           }
+
+          /* node:coverage disable */
           default: {
             // This should be impossible
             throw Error('Unrecognised type: ' + thing.type)
           }
+          /* node:coverage enable */
         }
       }
 
